@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const [filterCategories, setFilterCategories] = useState<string[]>([]);
   const [filterPriority, setFilterPriority] = useState<string | null>(null);
   const [filterEpicId, setFilterEpicId] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -136,55 +137,110 @@ export default function DashboardPage() {
 
       {/* Filter bar */}
       <div className="flex items-center gap-1.5 px-6 py-3 border-b border-[#1e1e2e] bg-[#12121a] flex-wrap">
-        {categories.map(cat => (
-          <button
-            key={cat.id}
-            onClick={() => setFilterCategories(prev => prev.includes(cat.id) ? prev.filter(c => c !== cat.id) : [...prev, cat.id])}
-            className={`px-3 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer ${filterCategories.includes(cat.id) ? 'bg-[#1a1a26]' : 'bg-transparent'}`}
-            style={filterCategories.includes(cat.id) ? { borderColor: cat.color, color: cat.color } : { borderColor: '#2a2a3a', color: '#8888a0' }}
-          >
-            <span className="inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle" style={{ background: cat.color }} />
-            {cat.label}
-          </button>
-        ))}
-        <div className="w-px h-5 bg-[#2a2a3a] mx-1" />
-        {PRIORITIES.map(p => (
-          <button
-            key={p.id}
-            onClick={() => setFilterPriority(prev => prev === p.id ? null : p.id)}
-            className={`px-3 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer ${filterPriority === p.id ? 'bg-[#1a1a26]' : 'bg-transparent'}`}
-            style={filterPriority === p.id ? { borderColor: p.color, color: p.color } : { borderColor: '#2a2a3a', color: '#8888a0' }}
-          >
-            {p.label}
-          </button>
-        ))}
-        {epics.length > 0 && (
-          <>
-            <div className="w-px h-5 bg-[#2a2a3a] mx-1" />
-            {epics.filter(e => e.status !== 'archived').map(epic => (
-              <button
-                key={epic.id}
-                onClick={() => setFilterEpicId(prev => prev === epic.id ? null : epic.id)}
-                className={`px-3 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer ${filterEpicId === epic.id ? 'bg-[#1a1a26]' : 'bg-transparent'}`}
-                style={filterEpicId === epic.id ? { borderColor: epic.color, color: epic.color } : { borderColor: '#2a2a3a', color: '#8888a0' }}
-              >
-                &#9670; {epic.name}
-              </button>
-            ))}
-          </>
-        )}
-        {(filterCategories.length > 0 || filterPriority || filterEpicId) && (
-          <>
-            <div className="w-px h-5 bg-[#2a2a3a] mx-1" />
+        <button
+          onClick={() => setShowFilters(prev => !prev)}
+          className={`px-3 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer ${showFilters || filterCategories.length > 0 || filterPriority || filterEpicId ? 'bg-[#1a1a26] border-[#4a9eff] text-[#4a9eff]' : 'bg-transparent border-[#2a2a3a] text-[#8888a0]'}`}
+        >
+          &#9707; Filter
+        </button>
+
+        {/* Active filter pills — always visible when filters are set */}
+        {filterCategories.map(catId => {
+          const cat = categories.find(c => c.id === catId);
+          if (!cat) return null;
+          return (
             <button
-              onClick={() => { setFilterCategories([]); setFilterPriority(null); setFilterEpicId(null); }}
-              className="px-3 py-1 rounded-md text-xs font-medium text-[#f87171] border-transparent cursor-pointer"
+              key={cat.id}
+              onClick={() => setFilterCategories(prev => prev.filter(c => c !== cat.id))}
+              className="px-3 py-1 rounded-md text-xs font-medium border bg-[#1a1a26] transition-all cursor-pointer"
+              style={{ borderColor: cat.color, color: cat.color }}
             >
-              Clear filters
+              <span className="inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle" style={{ background: cat.color }} />
+              {cat.label} &times;
             </button>
-          </>
+          );
+        })}
+        {filterPriority && (
+          <button
+            onClick={() => setFilterPriority(null)}
+            className="px-3 py-1 rounded-md text-xs font-medium border bg-[#1a1a26] transition-all cursor-pointer"
+            style={{ borderColor: PRIORITIES.find(p => p.id === filterPriority)?.color, color: PRIORITIES.find(p => p.id === filterPriority)?.color }}
+          >
+            {PRIORITIES.find(p => p.id === filterPriority)?.label} &times;
+          </button>
+        )}
+        {filterEpicId && (() => {
+          const epic = epics.find(e => e.id === filterEpicId);
+          if (!epic) return null;
+          return (
+            <button
+              onClick={() => setFilterEpicId(null)}
+              className="px-3 py-1 rounded-md text-xs font-medium border bg-[#1a1a26] transition-all cursor-pointer"
+              style={{ borderColor: epic.color, color: epic.color }}
+            >
+              &#9670; {epic.name} &times;
+            </button>
+          );
+        })()}
+        {(filterCategories.length > 0 || filterPriority || filterEpicId) && (
+          <button
+            onClick={() => { setFilterCategories([]); setFilterPriority(null); setFilterEpicId(null); }}
+            className="px-3 py-1 rounded-md text-xs font-medium text-[#f87171] border-transparent cursor-pointer"
+          >
+            Clear all
+          </button>
         )}
       </div>
+
+      {/* Expanded filter options */}
+      {showFilters && (
+        <div className="px-6 py-3 border-b border-[#1e1e2e] bg-[#0e0e16] space-y-3">
+          {categories.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[#555568] text-[10px] uppercase tracking-wider font-semibold w-16 shrink-0">Category</span>
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setFilterCategories(prev => prev.includes(cat.id) ? prev.filter(c => c !== cat.id) : [...prev, cat.id])}
+                  className={`px-3 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer ${filterCategories.includes(cat.id) ? 'bg-[#1a1a26]' : 'bg-transparent'}`}
+                  style={filterCategories.includes(cat.id) ? { borderColor: cat.color, color: cat.color } : { borderColor: '#2a2a3a', color: '#8888a0' }}
+                >
+                  <span className="inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle" style={{ background: cat.color }} />
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[#555568] text-[10px] uppercase tracking-wider font-semibold w-16 shrink-0">Priority</span>
+            {PRIORITIES.map(p => (
+              <button
+                key={p.id}
+                onClick={() => setFilterPriority(prev => prev === p.id ? null : p.id)}
+                className={`px-3 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer ${filterPriority === p.id ? 'bg-[#1a1a26]' : 'bg-transparent'}`}
+                style={filterPriority === p.id ? { borderColor: p.color, color: p.color } : { borderColor: '#2a2a3a', color: '#8888a0' }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          {epics.filter(e => e.status !== 'archived').length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[#555568] text-[10px] uppercase tracking-wider font-semibold w-16 shrink-0">Epic</span>
+              {epics.filter(e => e.status !== 'archived').map(epic => (
+                <button
+                  key={epic.id}
+                  onClick={() => setFilterEpicId(prev => prev === epic.id ? null : epic.id)}
+                  className={`px-3 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer ${filterEpicId === epic.id ? 'bg-[#1a1a26]' : 'bg-transparent'}`}
+                  style={filterEpicId === epic.id ? { borderColor: epic.color, color: epic.color } : { borderColor: '#2a2a3a', color: '#8888a0' }}
+                >
+                  &#9670; {epic.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="flex items-center gap-4 px-6 py-2.5 border-b border-[#1e1e2e] text-xs">
