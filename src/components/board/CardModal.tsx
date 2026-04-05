@@ -1,0 +1,124 @@
+'use client';
+
+import { useState } from 'react';
+import type { Card, Category, Column, Epic } from '@/types/database';
+import { PRIORITIES, EFFORTS } from '@/types/database';
+
+interface CardModalProps {
+  card: Card | null;
+  boardId: string;
+  defaultColumnId: string;
+  categories: Category[];
+  columns: Column[];
+  epics: Epic[];
+  onSave: (data: Partial<Card>) => Promise<void>;
+  onClose: () => void;
+}
+
+export function CardModal({ card, boardId, defaultColumnId, categories, columns, epics, onSave, onClose }: CardModalProps) {
+  const [title, setTitle] = useState(card?.title || '');
+  const [description, setDescription] = useState(card?.description || '');
+  const [categoryId, setCategoryId] = useState(card?.category_id || categories[0]?.id || '');
+  const [priority, setPriority] = useState<Card['priority']>(card?.priority || 'medium');
+  const [effort, setEffort] = useState<NonNullable<Card['effort']>>(card?.effort || 'M');
+  const [columnId, setColumnId] = useState(card?.column_id || defaultColumnId);
+  const [epicId, setEpicId] = useState(card?.epic_id || '');
+  const [notes, setNotes] = useState(card?.notes || '');
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+    setSaving(true);
+    await onSave({
+      board_id: boardId,
+      title: title.trim(),
+      description: description.trim() || null,
+      category_id: categoryId || null,
+      priority: priority as Card['priority'],
+      effort: effort as Card['effort'],
+      column_id: columnId,
+      epic_id: epicId || null,
+      notes: notes.trim() || null,
+      position: 0,
+    });
+    setSaving(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1000] backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-[#12121a] border border-[#2a2a3a] rounded-xl w-[480px] max-w-[95vw] max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e2e]">
+          <h2 className="text-[15px] font-semibold text-white">{card ? 'Edit Project' : 'New Project'}</h2>
+          <button className="text-[#555568] hover:text-white text-lg px-2 py-1 rounded hover:bg-[#22222f] transition-all cursor-pointer" onClick={onClose}>&times;</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="p-5 space-y-3.5">
+            <div>
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Title</label>
+              <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="What are you building?"
+                className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] transition-colors" autoFocus />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Description</label>
+              <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Brief description or goal..."
+                className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] transition-colors resize-y min-h-[60px]" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Category</label>
+                <select value={categoryId} onChange={e => setCategoryId(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] cursor-pointer">
+                  <option value="">None</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Priority</label>
+                <select value={priority} onChange={e => setPriority(e.target.value as Card['priority'])}
+                  className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] cursor-pointer">
+                  {PRIORITIES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Effort</label>
+                <select value={effort} onChange={e => setEffort(e.target.value as NonNullable<Card['effort']>)}
+                  className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] cursor-pointer">
+                  {EFFORTS.map(e => <option key={e} value={e}>{e}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Status</label>
+                <select value={columnId} onChange={e => setColumnId(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] cursor-pointer">
+                  {columns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Epic</label>
+              <select value={epicId} onChange={e => setEpicId(e.target.value)}
+                className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] cursor-pointer">
+                <option value="">No epic</option>
+                {epics.filter(e => e.status !== 'archived').map(e => <option key={e.id} value={e.id}>&#9670; {e.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Notes</label>
+              <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Links, context, next steps..." rows={3}
+                className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] transition-colors resize-y min-h-[60px]" />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 px-5 py-3 border-t border-[#1e1e2e]">
+            <button type="button" onClick={onClose} className="text-xs text-[#8888a0] border border-[#2a2a3a] px-4 py-2 rounded-md hover:bg-[#1a1a26] transition-all cursor-pointer">Cancel</button>
+            <button type="submit" disabled={saving} className="text-xs text-white bg-[#4a9eff] px-4 py-2 rounded-md hover:brightness-110 transition-all disabled:opacity-50 cursor-pointer">
+              {saving ? 'Saving...' : card ? 'Save' : 'Create'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
