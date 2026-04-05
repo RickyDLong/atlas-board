@@ -10,7 +10,7 @@ import type { Card } from '@/types/database';
 import { signOut } from '@/lib/board-actions';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { AtlasLogo } from '@/components/AtlasLogo';
 
 export default function DashboardPage() {
   const {
@@ -87,13 +87,7 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e2e] bg-[#12121a] sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <Image
-            src="/atlas-board-logo.png"
-            alt="Atlas Board"
-            width={32}
-            height={32}
-            className="rounded-lg"
-          />
+          <AtlasLogo size={32} />
           <h1 className="text-lg font-semibold text-white tracking-tight">
             Atlas Board <span className="text-[#555568] font-normal ml-2 text-sm">{board?.name}</span>
           </h1>

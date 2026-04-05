@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import { AtlasLogo } from '@/components/AtlasLogo';
 
 export default async function Home() {
   const supabase = await createClient();
@@ -16,13 +16,7 @@ export default async function Home() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e2e]">
         <div className="flex items-center gap-3">
-          <Image
-            src="/atlas-board-logo.png"
-            alt="Atlas Board"
-            width={32}
-            height={32}
-            className="rounded-lg"
-          />
+          <AtlasLogo size={32} />
           <span className="text-white font-semibold tracking-tight">Atlas Board</span>
         </div>
         <div className="flex items-center gap-3">
@@ -44,14 +38,7 @@ export default async function Home() {
       {/* Hero */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         <div className="mb-8">
-          <Image
-            src="/atlas-board-logo.png"
-            alt="Atlas Board"
-            width={96}
-            height={96}
-            className="rounded-2xl mx-auto shadow-2xl shadow-white/5"
-            priority
-          />
+          <AtlasLogo size={96} className="mx-auto shadow-2xl shadow-white/5" />
         </div>
 
         <h1 className="text-5xl sm:text-6xl font-bold text-white tracking-tight leading-tight max-w-2xl">
