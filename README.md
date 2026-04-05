@@ -10,7 +10,7 @@ A personal project management board built for speed and focus. Kanban-style colu
 
 Atlas Board gives each authenticated user their own private Kanban board with:
 
-- **Drag-and-drop columns** — Backlog, Up Next, In Progress, Review, Done (fully customizable)
+- **Customizable columns** — Backlog, Up Next, In Progress, Review, Done by default; drag-and-drop cards between them
 - **Cards** with priority levels (Critical / High / Medium / Low), effort sizing (XS–XL), descriptions, and notes
 - **Epics** — group related cards under a named epic with status tracking and target dates
 - **Categories** — color-coded labels for organizing work across different areas
@@ -48,7 +48,6 @@ src/
 │   │   ├── CardModal.tsx     # Card create/edit modal
 │   │   ├── EpicPanel.tsx     # Epic management side panel
 │   │   └── SettingsModal.tsx # Board settings (columns, categories)
-│   └── AtlasLogo.tsx         # SVG logomark component
 ├── hooks/
 │   └── useBoard.ts           # Client-side state management for board data
 ├── lib/
@@ -59,6 +58,7 @@ src/
 │       └── middleware.ts     # Session refresh middleware
 ├── types/
 │   └── database.ts           # TypeScript interfaces, constants, defaults
+├── middleware.ts              # Supabase session refresh on every request
 supabase/
 └── migrations/
     └── 001_initial_schema.sql # Full database schema with RLS policies
