@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -42,9 +43,13 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl mx-auto mb-4">
-            A
-          </div>
+          <Image
+            src="/atlas-board-logo.png"
+            alt="Atlas Board"
+            width={48}
+            height={48}
+            className="rounded-xl mx-auto mb-4"
+          />
           <h1 className="text-2xl font-semibold text-white tracking-tight">Atlas Board</h1>
           <p className="text-[#8888a0] text-sm mt-1">Sign in to your command center</p>
         </div>
