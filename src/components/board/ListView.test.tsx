@@ -41,8 +41,8 @@ describe('ListView', () => {
   it('renders column status badges', () => {
     render(<ListView {...defaultProps} />);
     // Column names appear in both header and data rows
-    expect(screen.getAllByText('Backlog').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('In Progress').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Quest Log').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('In Battle').length).toBeGreaterThan(0);
   });
 
   it('calls onCardClick when a row is clicked', () => {

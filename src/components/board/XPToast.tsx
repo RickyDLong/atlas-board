@@ -3,17 +3,17 @@
 import type { XPToast as XPToastType } from '@/hooks/useGamification';
 
 const ACTION_LABELS: Record<string, string> = {
-  card_create: 'Card Created',
-  card_complete: 'Card Completed',
-  card_complete_high: 'High Priority Done',
-  card_complete_critical: 'Critical Done!',
+  card_create: 'Quest Accepted',
+  card_complete: 'Quest Conquered',
+  card_complete_high: 'High Priority Conquered',
+  card_complete_critical: 'Critical Conquered!',
   card_on_time: 'On Time Bonus',
   card_early: 'Early Finish!',
   column_clear: 'Column Cleared!',
   streak_daily: 'Daily Streak',
   streak_7day: '7-Day Streak!',
   streak_30day: '30-Day Streak!',
-  epic_complete: 'Epic Complete!',
+  epic_complete: 'Epic Conquered!',
   archive_batch: 'Cleanup Bonus',
 };
 

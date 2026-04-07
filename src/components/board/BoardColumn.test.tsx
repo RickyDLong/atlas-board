@@ -20,7 +20,7 @@ describe('BoardColumn', () => {
 
   it('renders the column title', () => {
     render(<BoardColumn {...defaultProps} />);
-    expect(screen.getByText('Backlog')).toBeInTheDocument();
+    expect(screen.getByText('Quest Log')).toBeInTheDocument();
   });
 
   it('renders the card count', () => {
@@ -37,7 +37,7 @@ describe('BoardColumn', () => {
 
   it('renders empty state when no cards', () => {
     render(<BoardColumn {...defaultProps} cards={[]} />);
-    expect(screen.getByText('No projects here yet')).toBeInTheDocument();
+    expect(screen.getByText('No quests here yet')).toBeInTheDocument();
   });
 
   it('calls onAddCard with column id when Add button is clicked', () => {

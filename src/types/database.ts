@@ -85,11 +85,11 @@ export const EPIC_STATUSES: { id: EpicStatus; label: string; color: string }[] =
 export const EFFORTS: Effort[] = ['XS', 'S', 'M', 'L', 'XL'];
 
 export const DEFAULT_COLUMNS = [
-  { title: 'Backlog', color: '#555568' },
-  { title: 'Up Next', color: '#fbbf24' },
-  { title: 'In Progress', color: '#4a9eff' },
-  { title: 'Review', color: '#a855f7' },
-  { title: 'Done', color: '#34d399' },
+  { title: 'Quest Log', color: '#555568' },
+  { title: 'Preparing', color: '#fbbf24' },
+  { title: 'In Battle', color: '#4a9eff' },
+  { title: 'Loot Check', color: '#a855f7' },
+  { title: 'Conquered', color: '#34d399' },
 ];
 
 export const DEFAULT_CATEGORIES = [

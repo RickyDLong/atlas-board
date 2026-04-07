@@ -16,8 +16,8 @@ describe('StatsView', () => {
     expect(screen.getByText('Total Cards')).toBeInTheDocument();
     // "Active" may appear in both stat card and epic status — use getAllByText
     expect(screen.getAllByText('Active').length).toBeGreaterThan(0);
-    // "Done" appears as stat label and column name
-    expect(screen.getAllByText('Done').length).toBeGreaterThan(0);
+    // "Conquered" appears as stat label and column name
+    expect(screen.getAllByText('Conquered').length).toBeGreaterThan(0);
     expect(screen.getByText('Overdue')).toBeInTheDocument();
     expect(screen.getByText('Due This Week')).toBeInTheDocument();
     expect(screen.getByText('Avg Age')).toBeInTheDocument();

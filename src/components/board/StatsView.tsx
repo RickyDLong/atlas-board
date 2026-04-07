@@ -139,7 +139,7 @@ export function StatsView({ cards, categories, columns, epics }: StatsViewProps)
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
         <StatCard label="Total Cards" value={stats.total} />
         <StatCard label="Active" value={stats.active} color="#4a9eff" />
-        <StatCard label="Done" value={stats.done} color="#34d399" sub={stats.total > 0 ? `${Math.round((stats.done / stats.total) * 100)}% complete` : ''} />
+        <StatCard label="Conquered" value={stats.done} color="#34d399" sub={stats.total > 0 ? `${Math.round((stats.done / stats.total) * 100)}% complete` : ''} />
         <StatCard label="Overdue" value={stats.overdue} color={stats.overdue > 0 ? '#f87171' : '#34d399'} />
         <StatCard label="Due This Week" value={stats.dueThisWeek} color="#fbbf24" />
         <StatCard label="Avg Age" value={`${stats.avgAge}d`} sub="active cards" color="#8888a0" />

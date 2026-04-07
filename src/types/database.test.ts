@@ -64,9 +64,9 @@ describe('database constants', () => {
       expect(DEFAULT_COLUMNS).toHaveLength(5);
     });
 
-    it('follows standard kanban flow', () => {
+    it('follows quest-themed kanban flow', () => {
       expect(DEFAULT_COLUMNS.map(c => c.title)).toEqual([
-        'Backlog', 'Up Next', 'In Progress', 'Review', 'Done',
+        'Quest Log', 'Preparing', 'In Battle', 'Loot Check', 'Conquered',
       ]);
     });
 

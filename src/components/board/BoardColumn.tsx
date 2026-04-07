@@ -57,7 +57,7 @@ export function BoardColumn({
       <div className="flex-1 px-2 pb-2 overflow-y-auto">
         {cards.length === 0 && (
           <div className="flex items-center justify-center py-10 text-[#555568] text-xs">
-            No projects here yet
+            No quests here yet
           </div>
         )}
         {cards.map((card) => {

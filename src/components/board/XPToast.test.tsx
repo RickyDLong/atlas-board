@@ -28,7 +28,7 @@ describe('XPToastStack', () => {
 
   it('renders action label', () => {
     render(<XPToastStack toasts={mockToasts} onDismiss={onDismiss} />);
-    expect(screen.getByText('Card Completed')).toBeInTheDocument();
+    expect(screen.getByText('Quest Conquered')).toBeInTheDocument();
   });
 
   it('shows level-up text when leveled up', () => {
