@@ -1,14 +1,19 @@
 'use client';
 
 import { useBoard } from '@/hooks/useBoard';
+import { useGamification } from '@/hooks/useGamification';
 import { BoardColumn } from '@/components/board/BoardColumn';
 import { CardModal } from '@/components/board/CardModal';
 import { EpicPanel } from '@/components/board/EpicPanel';
 import { SettingsModal } from '@/components/board/SettingsModal';
+import { XPBar } from '@/components/board/XPBar';
+import { XPToastStack } from '@/components/board/XPToast';
+import { LevelUpCelebration } from '@/components/board/LevelUpCelebration';
+import { BadgePanel } from '@/components/board/BadgePanel';
 import { PRIORITIES } from '@/types/database';
 import type { Card } from '@/types/database';
-import { signOut } from '@/lib/board-actions';
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { signOut, getCurrentUser } from '@/lib/board-actions';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { ShortcutsModal } from '@/components/board/ShortcutsModal';
@@ -30,6 +35,30 @@ export default function DashboardPage() {
   } = useBoard();
 
   const router = useRouter();
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    getCurrentUser().then(u => setUserId(u?.id || null));
+  }, []);
+
+  const gam = useGamification(userId, board?.id || null);
+  const [showBadgePanel, setShowBadgePanel] = useState(false);
+  const [levelUpDisplay, setLevelUpDisplay] = useState<{ level: number; title: string; color: string } | null>(null);
+  const prevLevelRef = useRef<number>(0);
+
+  // Detect level-ups from XP toasts
+  useEffect(() => {
+    if (!gam.level) return;
+    if (prevLevelRef.current > 0 && gam.level.current_level > prevLevelRef.current) {
+      setLevelUpDisplay({
+        level: gam.level.current_level,
+        title: gam.level.title,
+        color: gam.levelColor,
+      });
+    }
+    prevLevelRef.current = gam.level.current_level;
+  }, [gam.level, gam.levelColor]);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [addToColumnId, setAddToColumnId] = useState<string | null>(null);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
@@ -68,6 +97,26 @@ export default function DashboardPage() {
   }), [columns, showShortcuts, showAddModal, editingCard, detailCard, showSettings, showEpicPanel, contextMenu]);
 
   useKeyboardShortcuts(shortcutActions);
+
+  // ─── Gamified card actions ─────────────────────────────────
+  const gamifiedAddCard = useCallback(async (card: Omit<Card, 'id' | 'created_at' | 'updated_at'>) => {
+    const newCard = await addCard(card as Card);
+    await gam.awardXP('card_create', { card_title: card.title });
+    return newCard;
+  }, [addCard, gam]);
+
+  const gamifiedMoveCard = useCallback(async (cardId: string, columnId: string) => {
+    await moveCardToColumn(cardId, columnId);
+    // Check if moved to Done column (last column by position)
+    const sorted = [...columns].sort((a, b) => a.position - b.position);
+    const lastCol = sorted.length > 0 ? sorted[sorted.length - 1] : undefined;
+    if (lastCol && columnId === lastCol.id) {
+      const card = cards.find(c => c.id === cardId);
+      if (card) {
+        await gam.awardCardCompletion(card, lastCol.id);
+      }
+    }
+  }, [moveCardToColumn, columns, cards, gam]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -126,6 +175,18 @@ export default function DashboardPage() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          {/* XP Bar */}
+          <XPBar
+            level={gam.level}
+            streak={gam.streak}
+            levelProgress={gam.levelProgress}
+            xpInCurrentLevel={gam.xpInCurrentLevel}
+            xpNeededForNext={gam.xpNeededForNext}
+            levelColor={gam.levelColor}
+            badgeCount={gam.badges.length}
+            onClickStats={() => setShowBadgePanel(true)}
+          />
+
           <input
             ref={searchRef}
             type="text"
@@ -334,7 +395,7 @@ export default function DashboardPage() {
               onAddCard={(colId) => { setAddToColumnId(colId); setShowAddModal(true); }}
               onCardClick={(card) => setDetailCard(card)}
               onCardMenu={(card, x, y) => setContextMenu({ card, x, y })}
-              onDrop={(colId, cardId) => moveCardToColumn(cardId, colId)}
+              onDrop={(colId, cardId) => gamifiedMoveCard(cardId, colId)}
             />
           ))}
         </div>
@@ -383,7 +444,7 @@ export default function DashboardPage() {
               onClick={() => { setEditingCard(contextMenu.card); setContextMenu(null); }}>Edit</button>
             {columns.filter(c => c.id !== contextMenu.card.column_id).map(col => (
               <button key={col.id} className="block w-full text-left px-3 py-1.5 text-xs text-[#8888a0] rounded hover:bg-[#22222f] hover:text-white transition-all"
-                onClick={() => { moveCardToColumn(contextMenu.card.id, col.id); setContextMenu(null); }}>
+                onClick={() => { gamifiedMoveCard(contextMenu.card.id, col.id); setContextMenu(null); }}>
                 Move to {col.title}
               </button>
             ))}
@@ -413,7 +474,7 @@ export default function DashboardPage() {
               await editCard(editingCard.id, data);
               setEditingCard(null);
             } else {
-              await addCard(data as Card);
+              await gamifiedAddCard(data as Card);
               setShowAddModal(false);
             }
             calendarDateRef.current = null;
@@ -432,7 +493,7 @@ export default function DashboardPage() {
           onEdit={() => { setEditingCard(detailCard); setDetailCard(null); }}
           onClose={() => setDetailCard(null)}
           onDelete={async () => { await removeCard(detailCard.id); setDetailCard(null); }}
-          onMove={async (colId) => { await moveCardToColumn(detailCard.id, colId); setDetailCard({ ...detailCard, column_id: colId }); }}
+          onMove={async (colId) => { await gamifiedMoveCard(detailCard.id, colId); setDetailCard({ ...detailCard, column_id: colId }); }}
           onViewEpic={(epicId) => { setSelectedEpicId(epicId); setShowEpicPanel(true); setDetailCard(null); }}
           onArchive={doneCol && detailCard.column_id === doneCol.id ? async () => { await archiveCard(detailCard.id); setDetailCard(null); } : undefined}
         />
@@ -482,6 +543,33 @@ export default function DashboardPage() {
           onRemoveEpic={removeEpic}
           onArchiveEpic={archiveEpicCards}
           onClose={() => { setShowEpicPanel(false); setSelectedEpicId(null); }}
+        />
+      )}
+
+      {/* Badge panel */}
+      {showBadgePanel && (
+        <BadgePanel
+          badges={gam.badges}
+          level={gam.level}
+          streak={gam.streak}
+          levelProgress={gam.levelProgress}
+          xpInCurrentLevel={gam.xpInCurrentLevel}
+          xpNeededForNext={gam.xpNeededForNext}
+          levelColor={gam.levelColor}
+          onClose={() => setShowBadgePanel(false)}
+        />
+      )}
+
+      {/* XP Toast notifications */}
+      <XPToastStack toasts={gam.xpToasts} onDismiss={gam.dismissToast} />
+
+      {/* Level-up celebration */}
+      {levelUpDisplay && (
+        <LevelUpCelebration
+          level={levelUpDisplay.level}
+          title={levelUpDisplay.title}
+          color={levelUpDisplay.color}
+          onComplete={() => setLevelUpDisplay(null)}
         />
       )}
     </div>

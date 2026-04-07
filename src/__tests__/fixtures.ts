@@ -1,4 +1,4 @@
-import type { Board, Column, Category, Card, Epic } from '@/types/database';
+import type { Board, Column, Category, Card, Epic, UserLevel, UserStreak, UserBadge } from '@/types/database';
 
 export const mockBoard: Board = {
   id: 'board-1',
@@ -88,3 +88,28 @@ export function createMockCard(overrides: Partial<Card> = {}): Card {
     ...overrides,
   };
 }
+
+// ─── Gamification Fixtures ──────────────────────────────────
+
+export const mockUserLevel: UserLevel = {
+  user_id: 'user-1',
+  current_xp: 1247,
+  current_level: 12,
+  title: 'Specialist',
+  updated_at: '2026-04-01T00:00:00Z',
+};
+
+export const mockUserStreak: UserStreak = {
+  user_id: 'user-1',
+  current_streak: 14,
+  longest_streak: 21,
+  last_active_date: '2026-04-06',
+  freeze_tokens: 1,
+  updated_at: '2026-04-06T00:00:00Z',
+};
+
+export const mockUserBadges: UserBadge[] = [
+  { id: 'badge-1', user_id: 'user-1', badge_key: 'first_blood', earned_at: '2026-02-01T00:00:00Z', progress: {} },
+  { id: 'badge-2', user_id: 'user-1', badge_key: 'streak_starter', earned_at: '2026-03-15T00:00:00Z', progress: {} },
+  { id: 'badge-3', user_id: 'user-1', badge_key: 'hat_trick', earned_at: '2026-03-20T00:00:00Z', progress: {} },
+];

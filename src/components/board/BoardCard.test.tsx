@@ -43,7 +43,7 @@ describe('BoardCard', () => {
   });
 
   it('does not render effort badge when effort is null', () => {
-    const card = { ...defaultCard, effort: null as const };
+    const card = { ...defaultCard, effort: null as null };
     render(<BoardCard {...defaultProps} card={card} />);
     // Effort badge would show XS, S, M, etc — none should be present
     expect(screen.queryByText('XS')).not.toBeInTheDocument();
