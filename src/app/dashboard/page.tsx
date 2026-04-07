@@ -21,6 +21,7 @@ import { CalendarView } from '@/components/board/CalendarView';
 import { StatsView } from '@/components/board/StatsView';
 import { ListView } from '@/components/board/ListView';
 import { ArchivePanel } from '@/components/board/ArchivePanel';
+import { AtlasLogo } from '@/components/AtlasLogo';
 
 type ViewMode = 'board' | 'calendar' | 'stats' | 'list';
 
@@ -44,20 +45,20 @@ export default function DashboardPage() {
   const gam = useGamification(userId, board?.id || null);
   const [showBadgePanel, setShowBadgePanel] = useState(false);
   const [levelUpDisplay, setLevelUpDisplay] = useState<{ level: number; title: string; color: string } | null>(null);
-  const prevLevelRef = useRef<number>(0);
+  const [prevLevel, setPrevLevel] = useState(0);
 
-  // Detect level-ups from XP toasts
-  useEffect(() => {
-    if (!gam.level) return;
-    if (prevLevelRef.current > 0 && gam.level.current_level > prevLevelRef.current) {
+  // Detect level-ups — computed during render (React 19 pattern)
+  const currentLevel = gam.level?.current_level ?? 0;
+  if (currentLevel !== prevLevel) {
+    if (prevLevel > 0 && currentLevel > prevLevel && gam.level) {
       setLevelUpDisplay({
         level: gam.level.current_level,
         title: gam.level.title,
         color: gam.levelColor,
       });
     }
-    prevLevelRef.current = gam.level.current_level;
-  }, [gam.level, gam.levelColor]);
+    setPrevLevel(currentLevel);
+  }
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [addToColumnId, setAddToColumnId] = useState<string | null>(null);
@@ -76,7 +77,7 @@ export default function DashboardPage() {
   const [showArchive, setShowArchive] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('board');
   const searchRef = useRef<HTMLInputElement>(null);
-  const calendarDateRef = useRef<string | null>(null);
+  const [calendarDate, setCalendarDate] = useState<string | null>(null);
 
   const shortcutActions = useMemo(() => ({
     onNewCard: () => { setAddToColumnId(columns[0]?.id || null); setShowAddModal(true); },
@@ -113,7 +114,7 @@ export default function DashboardPage() {
     if (lastCol && columnId === lastCol.id) {
       const card = cards.find(c => c.id === cardId);
       if (card) {
-        await gam.awardCardCompletion(card, lastCol.id);
+        await gam.awardCardCompletion(card);
       }
     }
   }, [moveCardToColumn, columns, cards, gam]);
@@ -167,9 +168,7 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e2e] bg-[#12121a] sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-            A
-          </div>
+          <AtlasLogo size={32} />
           <h1 className="text-lg font-semibold text-white tracking-tight">
             Atlas Board <span className="text-[#555568] font-normal ml-2 text-sm">{board?.name}</span>
           </h1>
@@ -409,7 +408,7 @@ export default function DashboardPage() {
             onAddCard={(date, columnId) => {
               setAddToColumnId(columnId);
               setShowAddModal(true);
-              calendarDateRef.current = date;
+              setCalendarDate(date);
             }}
           />
         </div>
@@ -468,7 +467,7 @@ export default function DashboardPage() {
           columns={columns}
           epics={epics}
           nextPosition={cards.filter(c => c.column_id === (addToColumnId || columns[0]?.id)).length}
-          defaultDueDate={!editingCard ? calendarDateRef.current : null}
+          defaultDueDate={!editingCard ? calendarDate : null}
           onSave={async (data) => {
             if (editingCard) {
               await editCard(editingCard.id, data);
@@ -477,9 +476,9 @@ export default function DashboardPage() {
               await gamifiedAddCard(data as Card);
               setShowAddModal(false);
             }
-            calendarDateRef.current = null;
+            setCalendarDate(null);
           }}
-          onClose={() => { setShowAddModal(false); setEditingCard(null); calendarDateRef.current = null; }}
+          onClose={() => { setShowAddModal(false); setEditingCard(null); setCalendarDate(null); }}
         />
       )}
 

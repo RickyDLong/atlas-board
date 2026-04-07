@@ -1,0 +1,36 @@
+@charset "UTF-8";
+/*!
+ * RPG Awesome 0.0.2 by Daniela Howe, Ivan Montiel
+ * License - https://github.com/nagoshiashumari/Rpg-Awesome/blob/master/LICENSE.md
+ * (Font: SIL OFL 1.1, CSS: MIT License)
+ *
+ * Subset: only ra-shield used in Atlas Board card aging indicators.
+ */
+@font-face {
+  font-family: 'RPGAwesome';
+  src: url("/fonts/rpgawesome-webfont.eot?v=0.1.0");
+  src: url("/fonts/rpgawesome-webfont.eot?#iefix&v=0.1.0") format("embedded-opentype"),
+       url("/fonts/rpgawesome-webfont.woff?v=0.1.0") format("woff"),
+       url("/fonts/rpgawesome-webfont.ttf?v=0.1.0") format("truetype"),
+       url("/fonts/rpgawesome-webfont.svg?v=0.1.0#rpg-awesome") format("svg");
+  font-weight: normal;
+  font-style: normal;
+}
+
+.ra {
+  font-family: RPGAwesome;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  font-style: normal;
+  font-variant: normal;
+  font-weight: normal;
+  line-height: 1;
+  speak: none;
+  text-transform: none;
+  display: inline-block;
+}
+
+/* Shield icon — used for card aging indicators */
+.ra-shield:before {
+  content: "\e945";
+}

@@ -59,8 +59,9 @@ export function useBoard() {
 
   const moveCardToColumn = useCallback(async (cardId: string, columnId: string) => {
     const nextPosition = cards.filter(c => c.column_id === columnId).length;
-    await actions.updateCard(cardId, { column_id: columnId, position: nextPosition });
-    setCards(prev => prev.map(c => c.id === cardId ? { ...c, column_id: columnId, position: nextPosition } : c));
+    const now = new Date().toISOString();
+    await actions.updateCard(cardId, { column_id: columnId, position: nextPosition, column_changed_at: now });
+    setCards(prev => prev.map(c => c.id === cardId ? { ...c, column_id: columnId, position: nextPosition, column_changed_at: now } : c));
   }, [cards]);
 
   const archiveCard = useCallback(async (id: string) => {

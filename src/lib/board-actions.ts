@@ -168,7 +168,7 @@ export async function deleteCard(id: string): Promise<void> {
 }
 
 export async function moveCard(id: string, columnId: string): Promise<void> {
-  await updateCard(id, { column_id: columnId });
+  await updateCard(id, { column_id: columnId, column_changed_at: new Date().toISOString() });
 }
 
 // ─── Auth ────────────────────────────────────────────────────

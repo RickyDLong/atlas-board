@@ -389,7 +389,6 @@ export async function awardCardCompletionXP(
   userId: string,
   boardId: string,
   card: Card,
-  _doneColumnId: string,
 ): Promise<XPAwardResult | null> {
   // Only award when moving TO done column
   // Determine the right action based on priority

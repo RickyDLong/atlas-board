@@ -63,12 +63,15 @@ export function BoardColumn({
         {cards.map((card) => {
           const cat = categories.find((c) => c.id === card.category_id);
           const pri = PRIORITIES.find((p) => p.id === card.priority);
+          const sorted = [...columns].sort((a, b) => a.position - b.position);
+          const isDone = sorted.length > 0 && column.id === sorted[sorted.length - 1].id;
           return (
             <BoardCard
               key={card.id}
               card={card}
               category={cat}
               priority={pri}
+              isDoneColumn={isDone}
               onClick={() => onCardClick(card)}
               onMenu={(x, y) => onCardMenu(card, x, y)}
             />

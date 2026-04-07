@@ -11,20 +11,18 @@ interface LevelUpCelebrationProps {
 
 export function LevelUpCelebration({ level, title, color, onComplete }: LevelUpCelebrationProps) {
   const [phase, setPhase] = useState<'enter' | 'hold' | 'exit'>('enter');
-  const [particles, setParticles] = useState<{ x: number; y: number; size: number; color: string; delay: number }[]>([]);
-
-  useEffect(() => {
-    // Generate particles
+  const [particles] = useState(() => {
     const colors = ['#4a9eff', '#a855f7', '#34d399', '#fbbf24', '#f87171', '#fb923c'];
-    const p = Array.from({ length: 30 }, () => ({
+    return Array.from({ length: 30 }, () => ({
       x: Math.random() * 100,
       y: Math.random() * 100,
       size: Math.random() * 6 + 2,
       color: colors[Math.floor(Math.random() * colors.length)],
       delay: Math.random() * 0.5,
     }));
-    setParticles(p);
+  });
 
+  useEffect(() => {
     const t1 = setTimeout(() => setPhase('hold'), 400);
     const t2 = setTimeout(() => setPhase('exit'), 2500);
     const t3 = setTimeout(onComplete, 3200);

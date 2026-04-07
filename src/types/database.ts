@@ -51,6 +51,7 @@ export interface Card {
   due_date: string | null;
   archived_at: string | null;
   position: number;
+  column_changed_at: string | null;
   created_at: string;
   updated_at: string;
 }

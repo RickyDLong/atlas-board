@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Research artifacts (standalone dashboards, not app code)
+    "atlas-gamification-plan.jsx",
   ]),
 ]);
 

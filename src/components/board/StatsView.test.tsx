@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { StatsView } from './StatsView';
-import { mockCards, mockCategories, mockColumns, mockEpics, createMockCard } from '@/__tests__/fixtures';
+import { mockCards, mockCategories, mockColumns, mockEpics } from '@/__tests__/fixtures';
 
 describe('StatsView', () => {
   const defaultProps = {

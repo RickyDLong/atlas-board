@@ -104,10 +104,10 @@ export function useGamification(userId: string | null, boardId: string | null) {
   }, [userId, boardId, addToast]);
 
   // Convenience: award XP for completing a card
-  const awardCardCompletion = useCallback(async (card: Card, doneColumnId: string) => {
+  const awardCardCompletion = useCallback(async (card: Card) => {
     if (!userId || !boardId) return;
     try {
-      const result = await gamification.awardCardCompletionXP(userId, boardId, card, doneColumnId);
+      const result = await gamification.awardCardCompletionXP(userId, boardId, card);
       if (result) {
         setLevel(prev => prev ? {
           ...prev,

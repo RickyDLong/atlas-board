@@ -18,6 +18,24 @@ type SortDir = 'asc' | 'desc';
 const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const EFFORT_ORDER: Record<string, number> = { XL: 0, L: 1, M: 2, S: 3, XS: 4 };
 
+function SortHeader({ field, label, width, sortField, sortDir, onToggle }: {
+  field: SortField; label: string; width: string;
+  sortField: SortField; sortDir: SortDir; onToggle: (field: SortField) => void;
+}) {
+  const active = sortField === field;
+  return (
+    <th
+      className={`text-left text-[10px] font-semibold uppercase tracking-wider px-3 py-2.5 cursor-pointer select-none transition-colors hover:text-[#e8e8f0] ${width} ${active ? 'text-[#4a9eff]' : 'text-[#555568]'}`}
+      onClick={() => onToggle(field)}
+    >
+      {label}
+      {active && (
+        <span className="ml-1 text-[8px]">{sortDir === 'asc' ? '▲' : '▼'}</span>
+      )}
+    </th>
+  );
+}
+
 export function ListView({ cards, categories, columns, epics, onCardClick }: ListViewProps) {
   const [sortField, setSortField] = useState<SortField>('priority');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -92,34 +110,21 @@ export function ListView({ cards, categories, columns, epics, onCardClick }: Lis
   today.setHours(0, 0, 0, 0);
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-  function SortHeader({ field, label, width }: { field: SortField; label: string; width: string }) {
-    const active = sortField === field;
-    return (
-      <th
-        className={`text-left text-[10px] font-semibold uppercase tracking-wider px-3 py-2.5 cursor-pointer select-none transition-colors hover:text-[#e8e8f0] ${width} ${active ? 'text-[#4a9eff]' : 'text-[#555568]'}`}
-        onClick={() => toggleSort(field)}
-      >
-        {label}
-        {active && (
-          <span className="ml-1 text-[8px]">{sortDir === 'asc' ? '▲' : '▼'}</span>
-        )}
-      </th>
-    );
-  }
+  const sortProps = { sortField, sortDir, onToggle: toggleSort };
 
   return (
     <div className="flex-1 overflow-auto p-4">
       <table className="w-full border-collapse">
         <thead className="sticky top-0 bg-[#0a0a0f] z-10">
           <tr className="border-b border-[#1e1e2e]">
-            <SortHeader field="title" label="Title" width="min-w-[200px]" />
-            <SortHeader field="status" label="Status" width="w-28" />
-            <SortHeader field="category" label="Category" width="w-28" />
-            <SortHeader field="priority" label="Priority" width="w-24" />
-            <SortHeader field="effort" label="Effort" width="w-16" />
-            <SortHeader field="epic" label="Epic" width="w-32" />
-            <SortHeader field="due_date" label="Due" width="w-24" />
-            <SortHeader field="updated_at" label="Updated" width="w-24" />
+            <SortHeader field="title" label="Title" width="min-w-[200px]" {...sortProps} />
+            <SortHeader field="status" label="Status" width="w-28" {...sortProps} />
+            <SortHeader field="category" label="Category" width="w-28" {...sortProps} />
+            <SortHeader field="priority" label="Priority" width="w-24" {...sortProps} />
+            <SortHeader field="effort" label="Effort" width="w-16" {...sortProps} />
+            <SortHeader field="epic" label="Epic" width="w-32" {...sortProps} />
+            <SortHeader field="due_date" label="Due" width="w-24" {...sortProps} />
+            <SortHeader field="updated_at" label="Updated" width="w-24" {...sortProps} />
           </tr>
         </thead>
         <tbody>
