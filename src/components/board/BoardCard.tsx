@@ -35,9 +35,25 @@ export function BoardCard({ card, category, priority, onClick, onMenu }: BoardCa
       />
 
       <div className="flex items-start justify-between mb-1.5 pt-1">
-        <span className="text-[13px] font-medium leading-snug text-[#e8e8f0] flex-1">
-          {card.title}
-        </span>
+        <div className="flex items-start gap-1.5 flex-1 min-w-0">
+          {(() => {
+            const now = new Date();
+            const updated = new Date(card.updated_at);
+            const days = Math.floor((now.getTime() - updated.getTime()) / (1000 * 60 * 60 * 24));
+            const color = days < 3 ? '#34d399' : days < 7 ? '#fbbf24' : days < 14 ? '#fb923c' : '#f87171';
+            const label = days === 0 ? 'Today' : days === 1 ? '1 day' : `${days} days`;
+            return (
+              <span
+                className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5"
+                style={{ background: color }}
+                title={`${label} in column`}
+              />
+            );
+          })()}
+          <span className="text-[13px] font-medium leading-snug text-[#e8e8f0]">
+            {card.title}
+          </span>
+        </div>
         <button
           className="opacity-0 group-hover:opacity-100 bg-transparent border-none text-[#555568] cursor-pointer px-1 py-0.5 text-sm rounded hover:bg-[#22222f] hover:text-[#8888a0] transition-opacity"
           onClick={(e) => {
@@ -81,6 +97,25 @@ export function BoardCard({ card, category, priority, onClick, onMenu }: BoardCa
             {card.effort}
           </span>
         )}
+        {card.due_date && (() => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const due = new Date(card.due_date + 'T00:00:00');
+          const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          const isOverdue = diffDays < 0;
+          const isDueToday = diffDays === 0;
+          const isDueSoon = diffDays > 0 && diffDays <= 2;
+          const color = isOverdue ? '#f87171' : isDueToday ? '#fbbf24' : isDueSoon ? '#fb923c' : '#555568';
+          const label = isOverdue ? `${Math.abs(diffDays)}d overdue` : isDueToday ? 'Due today' : `${diffDays}d`;
+          return (
+            <span
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded font-mono"
+              style={{ color, background: color + '18' }}
+            >
+              {label}
+            </span>
+          );
+        })()}
       </div>
     </div>
   );

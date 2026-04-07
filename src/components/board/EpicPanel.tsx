@@ -14,12 +14,13 @@ interface EpicPanelProps {
   onAddEpic: (epic: Omit<Epic, 'id' | 'created_at' | 'updated_at'>) => Promise<Epic>;
   onEditEpic: (id: string, updates: Partial<Omit<Epic, 'id' | 'board_id' | 'created_at'>>) => Promise<void>;
   onRemoveEpic: (id: string) => Promise<void>;
+  onArchiveEpic?: (id: string) => Promise<void>;
   onClose: () => void;
 }
 
 export function EpicPanel({
   boardId, epics, cards, columns, selectedEpicId, onSelectEpic,
-  onAddEpic, onEditEpic, onRemoveEpic, onClose,
+  onAddEpic, onEditEpic, onRemoveEpic, onArchiveEpic, onClose,
 }: EpicPanelProps) {
   const [showCreate, setShowCreate] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -57,6 +58,7 @@ export function EpicPanel({
             columns={columns}
             onEdit={(updates) => onEditEpic(selectedEpic.id, updates)}
             onDelete={async () => { await onRemoveEpic(selectedEpic.id); onSelectEpic(null); }}
+            onArchive={onArchiveEpic ? async () => { await onArchiveEpic(selectedEpic.id); onSelectEpic(null); } : undefined}
           />
         )}
 
@@ -136,11 +138,12 @@ export function EpicPanel({
 // ─── Epic Detail ───────────────────────────────────────────
 
 function EpicDetail({
-  epic, cards, columns, onEdit, onDelete,
+  epic, cards, columns, onEdit, onDelete, onArchive,
 }: {
   epic: Epic; cards: Card[]; columns: Column[];
   onEdit: (updates: Partial<Epic>) => Promise<void>;
   onDelete: () => Promise<void>;
+  onArchive?: () => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
   const sortedCols = [...columns].sort((a, b) => a.position - b.position);
@@ -215,7 +218,12 @@ function EpicDetail({
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-2 border-t border-[#1e1e2e]">
-        <button onClick={onDelete} className="text-xs text-[#f87171] hover:bg-[#f8717110] px-3 py-1.5 rounded-md transition-all cursor-pointer">Delete Epic</button>
+        <div className="flex gap-2">
+          <button onClick={onDelete} className="text-xs text-[#f87171] hover:bg-[#f8717110] px-3 py-1.5 rounded-md transition-all cursor-pointer">Delete Epic</button>
+          {onArchive && (
+            <button onClick={onArchive} className="text-xs text-[#a855f7] hover:bg-[#a855f710] px-3 py-1.5 rounded-md transition-all cursor-pointer">Archive Epic + Cards</button>
+          )}
+        </div>
         <button onClick={() => setEditing(true)} className="text-xs text-white bg-[#4a9eff] px-3 py-1.5 rounded-md hover:brightness-110 transition-all cursor-pointer">Edit</button>
       </div>
     </div>

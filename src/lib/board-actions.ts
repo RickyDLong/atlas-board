@@ -123,9 +123,32 @@ export async function deleteEpic(id: string): Promise<void> {
 // ─── Cards ───────────────────────────────────────────────────
 
 export async function getCards(boardId: string): Promise<Card[]> {
-  const { data, error } = await supabase.from('cards').select('*').eq('board_id', boardId).order('position');
+  const { data, error } = await supabase.from('cards').select('*').eq('board_id', boardId).is('archived_at', null).order('position');
   if (error) throw error;
   return data as Card[];
+}
+
+export async function getArchivedCards(boardId: string): Promise<Card[]> {
+  const { data, error } = await supabase.from('cards').select('*').eq('board_id', boardId).not('archived_at', 'is', null).order('archived_at', { ascending: false });
+  if (error) throw error;
+  return data as Card[];
+}
+
+export async function archiveCard(id: string): Promise<void> {
+  const { error } = await supabase.from('cards').update({ archived_at: new Date().toISOString() }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function unarchiveCard(id: string): Promise<void> {
+  const { error } = await supabase.from('cards').update({ archived_at: null }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function archiveEpicCards(epicId: string): Promise<string[]> {
+  // Archive all cards belonging to this epic, return their IDs
+  const { data, error } = await supabase.from('cards').update({ archived_at: new Date().toISOString() }).eq('epic_id', epicId).select('id');
+  if (error) throw error;
+  return (data || []).map((c: { id: string }) => c.id);
 }
 
 export async function createCard(card: Omit<Card, 'id' | 'created_at' | 'updated_at'>): Promise<Card> {

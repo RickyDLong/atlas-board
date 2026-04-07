@@ -32,6 +32,7 @@ export interface Epic {
   color: string;
   status: 'planning' | 'active' | 'completed' | 'archived';
   target_date: string | null;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -47,6 +48,8 @@ export interface Card {
   priority: 'critical' | 'high' | 'medium' | 'low';
   effort: 'XS' | 'S' | 'M' | 'L' | 'XL' | null;
   notes: string | null;
+  due_date: string | null;
+  archived_at: string | null;
   position: number;
   created_at: string;
   updated_at: string;

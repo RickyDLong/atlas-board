@@ -63,6 +63,24 @@ export function useBoard() {
     setCards(prev => prev.map(c => c.id === cardId ? { ...c, column_id: columnId, position: nextPosition } : c));
   }, [cards]);
 
+  const archiveCard = useCallback(async (id: string) => {
+    await actions.archiveCard(id);
+    setCards(prev => prev.filter(c => c.id !== id));
+  }, []);
+
+  const unarchiveCard = useCallback(async (card: Card) => {
+    await actions.unarchiveCard(card.id);
+    setCards(prev => [...prev, { ...card, archived_at: null }]);
+  }, []);
+
+  const archiveEpicCards = useCallback(async (epicId: string) => {
+    const archivedIds = await actions.archiveEpicCards(epicId);
+    setCards(prev => prev.filter(c => !archivedIds.includes(c.id)));
+    // Also mark epic status as archived
+    await actions.updateEpic(epicId, { status: 'archived', archived_at: new Date().toISOString() });
+    setEpics(prev => prev.map(e => e.id === epicId ? { ...e, status: 'archived', archived_at: new Date().toISOString(), updated_at: new Date().toISOString() } : e));
+  }, []);
+
   // ─── Epic actions ────────────────────────────────────────
 
   const addEpic = useCallback(async (epic: Omit<Epic, 'id' | 'created_at' | 'updated_at'>) => {
@@ -127,7 +145,7 @@ export function useBoard() {
 
   return {
     board, columns, categories, cards, epics, loading, error,
-    addCard, editCard, removeCard, moveCardToColumn,
+    addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards,
     addEpic, editEpic, removeEpic,
     addColumn, editColumn, removeColumn, reorderColumns,
     addCategory, editCategory, removeCategory,

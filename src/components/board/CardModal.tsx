@@ -12,11 +12,12 @@ interface CardModalProps {
   columns: Column[];
   epics: Epic[];
   nextPosition: number;
+  defaultDueDate?: string | null;
   onSave: (data: Partial<Card>) => Promise<void>;
   onClose: () => void;
 }
 
-export function CardModal({ card, boardId, defaultColumnId, categories, columns, epics, nextPosition, onSave, onClose }: CardModalProps) {
+export function CardModal({ card, boardId, defaultColumnId, categories, columns, epics, nextPosition, defaultDueDate, onSave, onClose }: CardModalProps) {
   const [title, setTitle] = useState(card?.title || '');
   const [description, setDescription] = useState(card?.description || '');
   const [categoryId, setCategoryId] = useState(card?.category_id || categories[0]?.id || '');
@@ -25,6 +26,7 @@ export function CardModal({ card, boardId, defaultColumnId, categories, columns,
   const [columnId, setColumnId] = useState(card?.column_id || defaultColumnId);
   const [epicId, setEpicId] = useState(card?.epic_id || '');
   const [notes, setNotes] = useState(card?.notes || '');
+  const [dueDate, setDueDate] = useState(card?.due_date || defaultDueDate || '');
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,6 +43,7 @@ export function CardModal({ card, boardId, defaultColumnId, categories, columns,
       column_id: columnId,
       epic_id: epicId || null,
       notes: notes.trim() || null,
+      due_date: dueDate || null,
       position: card ? card.position : nextPosition,
     });
     setSaving(false);
@@ -105,6 +108,11 @@ export function CardModal({ card, boardId, defaultColumnId, categories, columns,
                 <option value="">No epic</option>
                 {epics.filter(e => e.status !== 'archived').map(e => <option key={e.id} value={e.id}>&#9670; {e.name}</option>)}
               </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Due Date</label>
+              <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
+                className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] cursor-pointer" />
             </div>
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Notes</label>

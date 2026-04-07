@@ -8,13 +8,21 @@ import { SettingsModal } from '@/components/board/SettingsModal';
 import { PRIORITIES } from '@/types/database';
 import type { Card } from '@/types/database';
 import { signOut } from '@/lib/board-actions';
-import { useState } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { ShortcutsModal } from '@/components/board/ShortcutsModal';
+import { CalendarView } from '@/components/board/CalendarView';
+import { StatsView } from '@/components/board/StatsView';
+import { ListView } from '@/components/board/ListView';
+import { ArchivePanel } from '@/components/board/ArchivePanel';
+
+type ViewMode = 'board' | 'calendar' | 'stats' | 'list';
 
 export default function DashboardPage() {
   const {
     board, columns, categories, cards, epics, loading, error,
-    addCard, editCard, removeCard, moveCardToColumn,
+    addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards,
     addEpic, editEpic, removeEpic,
     addColumn, editColumn, removeColumn, reorderColumns,
     addCategory, editCategory, removeCategory,
@@ -35,6 +43,31 @@ export default function DashboardPage() {
   const [filterPriority, setFilterPriority] = useState<string | null>(null);
   const [filterEpicId, setFilterEpicId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('board');
+  const searchRef = useRef<HTMLInputElement>(null);
+  const calendarDateRef = useRef<string | null>(null);
+
+  const shortcutActions = useMemo(() => ({
+    onNewCard: () => { setAddToColumnId(columns[0]?.id || null); setShowAddModal(true); },
+    onFocusSearch: () => searchRef.current?.focus(),
+    onCloseModal: () => {
+      if (showShortcuts) { setShowShortcuts(false); return; }
+      if (showAddModal) { setShowAddModal(false); return; }
+      if (editingCard) { setEditingCard(null); return; }
+      if (detailCard) { setDetailCard(null); return; }
+      if (showSettings) { setShowSettings(false); return; }
+      if (showEpicPanel) { setShowEpicPanel(false); setSelectedEpicId(null); return; }
+      if (contextMenu) { setContextMenu(null); return; }
+    },
+    onToggleEpics: () => setShowEpicPanel(prev => !prev),
+    onToggleSettings: () => setShowSettings(prev => !prev),
+    onToggleFilters: () => setShowFilters(prev => !prev),
+    onShowHelp: () => setShowShortcuts(prev => !prev),
+  }), [columns, showShortcuts, showAddModal, editingCard, detailCard, showSettings, showEpicPanel, contextMenu]);
+
+  useKeyboardShortcuts(shortcutActions);
 
   const handleSignOut = async () => {
     await signOut();
@@ -94,17 +127,62 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           <input
+            ref={searchRef}
             type="text"
             placeholder="Search projects..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="bg-[#1a1a26] border border-[#2a2a3a] rounded-lg px-3 py-1.5 text-[#e8e8f0] text-xs w-48 outline-none focus:border-[#4a9eff] transition-colors"
           />
+          <div className="flex items-center bg-[#1a1a26] border border-[#2a2a3a] rounded-lg overflow-hidden">
+            <button
+              onClick={() => setViewMode('board')}
+              className={`h-8 px-2.5 text-xs font-medium transition-all cursor-pointer ${viewMode === 'board' ? 'bg-[#22222f] text-white' : 'text-[#555568] hover:text-[#8888a0]'}`}
+              title="Board view"
+            >
+              &#9638;
+            </button>
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`h-8 px-2.5 text-xs font-medium transition-all cursor-pointer ${viewMode === 'calendar' ? 'bg-[#22222f] text-white' : 'text-[#555568] hover:text-[#8888a0]'}`}
+              title="Calendar view"
+            >
+              &#9776;
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`h-8 px-2.5 text-xs font-medium transition-all cursor-pointer ${viewMode === 'list' ? 'bg-[#22222f] text-white' : 'text-[#555568] hover:text-[#8888a0]'}`}
+              title="List view"
+            >
+              &#9866;
+            </button>
+            <button
+              onClick={() => setViewMode('stats')}
+              className={`h-8 px-2.5 text-xs font-medium transition-all cursor-pointer ${viewMode === 'stats' ? 'bg-[#22222f] text-white' : 'text-[#555568] hover:text-[#8888a0]'}`}
+              title="Stats view"
+            >
+              &#9679;
+            </button>
+          </div>
+          <button
+            onClick={() => setShowShortcuts(true)}
+            className="w-8 h-8 bg-transparent border border-[#2a2a3a] text-[#8888a0] rounded-lg flex items-center justify-center text-xs font-mono hover:bg-[#1a1a26] hover:text-white transition-all cursor-pointer"
+            title="Keyboard shortcuts"
+          >
+            ?
+          </button>
           <button
             onClick={() => setShowEpicPanel(true)}
             className="h-8 px-3 bg-transparent border border-[#2a2a3a] text-[#8888a0] rounded-lg text-xs font-medium hover:bg-[#1a1a26] hover:text-white transition-all cursor-pointer"
           >
             Epics
+          </button>
+          <button
+            onClick={() => setShowArchive(true)}
+            className="h-8 px-3 bg-transparent border border-[#2a2a3a] text-[#555568] rounded-lg text-xs font-medium hover:bg-[#1a1a26] hover:text-[#a855f7] transition-all cursor-pointer"
+            title="View archive"
+          >
+            Archive
           </button>
           <button
             onClick={() => setShowSettings(true)}
@@ -243,22 +321,52 @@ export default function DashboardPage() {
         <span className="text-[#555568]">Total <span className="font-mono font-semibold text-[#8888a0]">{cards.length}</span></span>
       </div>
 
-      {/* Board */}
-      <div className="flex gap-px min-h-[calc(100vh-140px)] bg-[#1e1e2e]">
-        {columns.map(col => (
-          <BoardColumn
-            key={col.id}
-            column={col}
-            cards={getColumnCards(col.id)}
+      {/* Board / Calendar */}
+      {viewMode === 'board' ? (
+        <div className="flex gap-px min-h-[calc(100vh-140px)] bg-[#1e1e2e]">
+          {columns.map(col => (
+            <BoardColumn
+              key={col.id}
+              column={col}
+              cards={getColumnCards(col.id)}
+              categories={categories}
+              columns={columns}
+              onAddCard={(colId) => { setAddToColumnId(colId); setShowAddModal(true); }}
+              onCardClick={(card) => setDetailCard(card)}
+              onCardMenu={(card, x, y) => setContextMenu({ card, x, y })}
+              onDrop={(colId, cardId) => moveCardToColumn(cardId, colId)}
+            />
+          ))}
+        </div>
+      ) : viewMode === 'calendar' ? (
+        <div className="flex flex-1 min-h-[calc(100vh-140px)] bg-[#0a0a0f]">
+          <CalendarView
+            cards={filteredCards}
             categories={categories}
             columns={columns}
-            onAddCard={(colId) => { setAddToColumnId(colId); setShowAddModal(true); }}
             onCardClick={(card) => setDetailCard(card)}
-            onCardMenu={(card, x, y) => setContextMenu({ card, x, y })}
-            onDrop={(colId, cardId) => moveCardToColumn(cardId, colId)}
+            onAddCard={(date, columnId) => {
+              setAddToColumnId(columnId);
+              setShowAddModal(true);
+              calendarDateRef.current = date;
+            }}
           />
-        ))}
-      </div>
+        </div>
+      ) : viewMode === 'list' ? (
+        <div className="flex min-h-[calc(100vh-140px)] bg-[#0a0a0f]">
+          <ListView
+            cards={filteredCards}
+            categories={categories}
+            columns={columns}
+            epics={epics}
+            onCardClick={(card) => setDetailCard(card)}
+          />
+        </div>
+      ) : (
+        <div className="flex min-h-[calc(100vh-140px)] bg-[#0a0a0f]">
+          <StatsView cards={cards} categories={categories} columns={columns} epics={epics} />
+        </div>
+      )}
 
       {/* Context menu */}
       {contextMenu && (
@@ -279,6 +387,10 @@ export default function DashboardPage() {
                 Move to {col.title}
               </button>
             ))}
+            {doneCol && contextMenu.card.column_id === doneCol.id && (
+              <button className="block w-full text-left px-3 py-1.5 text-xs text-[#a855f7] rounded hover:bg-[#a855f710] transition-all"
+                onClick={() => { archiveCard(contextMenu.card.id); setContextMenu(null); }}>Archive</button>
+            )}
             <button className="block w-full text-left px-3 py-1.5 text-xs text-[#f87171] rounded hover:bg-[#f8717110] transition-all"
               onClick={() => { removeCard(contextMenu.card.id); setContextMenu(null); }}>Delete</button>
           </div>
@@ -295,6 +407,7 @@ export default function DashboardPage() {
           columns={columns}
           epics={epics}
           nextPosition={cards.filter(c => c.column_id === (addToColumnId || columns[0]?.id)).length}
+          defaultDueDate={!editingCard ? calendarDateRef.current : null}
           onSave={async (data) => {
             if (editingCard) {
               await editCard(editingCard.id, data);
@@ -303,8 +416,9 @@ export default function DashboardPage() {
               await addCard(data as Card);
               setShowAddModal(false);
             }
+            calendarDateRef.current = null;
           }}
-          onClose={() => { setShowAddModal(false); setEditingCard(null); }}
+          onClose={() => { setShowAddModal(false); setEditingCard(null); calendarDateRef.current = null; }}
         />
       )}
 
@@ -320,6 +434,7 @@ export default function DashboardPage() {
           onDelete={async () => { await removeCard(detailCard.id); setDetailCard(null); }}
           onMove={async (colId) => { await moveCardToColumn(detailCard.id, colId); setDetailCard({ ...detailCard, column_id: colId }); }}
           onViewEpic={(epicId) => { setSelectedEpicId(epicId); setShowEpicPanel(true); setDetailCard(null); }}
+          onArchive={doneCol && detailCard.column_id === doneCol.id ? async () => { await archiveCard(detailCard.id); setDetailCard(null); } : undefined}
         />
       )}
 
@@ -340,6 +455,19 @@ export default function DashboardPage() {
         />
       )}
 
+      {/* Shortcuts help */}
+      {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
+
+      {/* Archive panel */}
+      {showArchive && board && (
+        <ArchivePanel
+          boardId={board.id}
+          categories={categories}
+          onRestore={async (card) => { await unarchiveCard(card); }}
+          onClose={() => setShowArchive(false)}
+        />
+      )}
+
       {/* Epic panel */}
       {showEpicPanel && board && (
         <EpicPanel
@@ -352,6 +480,7 @@ export default function DashboardPage() {
           onAddEpic={addEpic}
           onEditEpic={editEpic}
           onRemoveEpic={removeEpic}
+          onArchiveEpic={archiveEpicCards}
           onClose={() => { setShowEpicPanel(false); setSelectedEpicId(null); }}
         />
       )}
@@ -362,7 +491,7 @@ export default function DashboardPage() {
 // ─── Detail Modal (inline) ─────────────────────────────────
 
 function DetailModal({
-  card, categories, columns, epics, onEdit, onClose, onDelete, onMove, onViewEpic,
+  card, categories, columns, epics, onEdit, onClose, onDelete, onMove, onViewEpic, onArchive,
 }: {
   card: Card;
   categories: import('@/types/database').Category[];
@@ -373,6 +502,7 @@ function DetailModal({
   onDelete: () => void;
   onMove: (colId: string) => void;
   onViewEpic: (epicId: string) => void;
+  onArchive?: () => void;
 }) {
   const cat = categories.find(c => c.id === card.category_id);
   const pri = PRIORITIES.find(p => p.id === card.priority);
@@ -425,6 +555,20 @@ function DetailModal({
               <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Status</div>
               <div className="text-[13px]">{col?.title || '—'}</div>
             </div>
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Due Date</div>
+              <div className="text-[13px]">
+                {card.due_date ? (() => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const due = new Date(card.due_date + 'T00:00:00');
+                  const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                  const isOverdue = diffDays < 0;
+                  const color = isOverdue ? '#f87171' : diffDays === 0 ? '#fbbf24' : '#e8e8f0';
+                  return <span style={{ color }}>{new Date(card.due_date).toLocaleDateString()}{isOverdue ? ' (overdue)' : diffDays === 0 ? ' (today)' : ''}</span>;
+                })() : '—'}
+              </div>
+            </div>
           </div>
           {card.notes && (
             <div>
@@ -445,7 +589,12 @@ function DetailModal({
           </div>
         </div>
         <div className="flex items-center justify-between px-5 py-3 border-t border-[#1e1e2e]">
-          <button onClick={onDelete} className="text-xs text-[#f87171] hover:bg-[#f8717110] px-3 py-1.5 rounded-md transition-all cursor-pointer">Delete</button>
+          <div className="flex gap-2">
+            <button onClick={onDelete} className="text-xs text-[#f87171] hover:bg-[#f8717110] px-3 py-1.5 rounded-md transition-all cursor-pointer">Delete</button>
+            {onArchive && (
+              <button onClick={onArchive} className="text-xs text-[#a855f7] hover:bg-[#a855f710] px-3 py-1.5 rounded-md transition-all cursor-pointer">Archive</button>
+            )}
+          </div>
           <div className="flex gap-2">
             <button onClick={onClose} className="text-xs text-[#8888a0] border border-[#2a2a3a] px-3 py-1.5 rounded-md hover:bg-[#1a1a26] transition-all cursor-pointer">Close</button>
             <button onClick={onEdit} className="text-xs text-white bg-[#4a9eff] px-3 py-1.5 rounded-md hover:brightness-110 transition-all cursor-pointer">Edit</button>
