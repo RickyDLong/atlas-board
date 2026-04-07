@@ -74,12 +74,11 @@ export default function DashboardPage() {
     return true;
   });
 
-  const getColumnCards = (colId: string) => filteredCards.filter(c => c.column_id === colId);
+  const getColumnCards = (colId: string) => filteredCards.filter(c => c.column_id === colId).sort((a, b) => a.position - b.position);
 
-  const totalActive = cards.filter(c => {
-    const doneCol = columns.find(col => col.title.toLowerCase() === 'done');
-    return !doneCol || c.column_id !== doneCol.id;
-  }).length;
+  const sortedCols = [...columns].sort((a, b) => a.position - b.position);
+  const doneCol = sortedCols.length > 0 ? sortedCols[sortedCols.length - 1] : undefined;
+  const totalActive = cards.filter(c => !doneCol || c.column_id !== doneCol.id).length;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
@@ -267,7 +266,10 @@ export default function DashboardPage() {
           <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
           <div
             className="fixed z-50 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg p-1 min-w-[160px] shadow-xl"
-            style={{ left: contextMenu.x, top: contextMenu.y }}
+            style={{
+              left: Math.min(contextMenu.x, typeof window !== 'undefined' ? window.innerWidth - 180 : contextMenu.x),
+              top: Math.min(contextMenu.y, typeof window !== 'undefined' ? window.innerHeight - 200 : contextMenu.y),
+            }}
           >
             <button className="block w-full text-left px-3 py-1.5 text-xs text-[#8888a0] rounded hover:bg-[#22222f] hover:text-white transition-all"
               onClick={() => { setEditingCard(contextMenu.card); setContextMenu(null); }}>Edit</button>
@@ -292,6 +294,7 @@ export default function DashboardPage() {
           categories={categories}
           columns={columns}
           epics={epics}
+          nextPosition={cards.filter(c => c.column_id === (addToColumnId || columns[0]?.id)).length}
           onSave={async (data) => {
             if (editingCard) {
               await editCard(editingCard.id, data);

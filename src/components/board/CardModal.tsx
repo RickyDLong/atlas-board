@@ -11,11 +11,12 @@ interface CardModalProps {
   categories: Category[];
   columns: Column[];
   epics: Epic[];
+  nextPosition: number;
   onSave: (data: Partial<Card>) => Promise<void>;
   onClose: () => void;
 }
 
-export function CardModal({ card, boardId, defaultColumnId, categories, columns, epics, onSave, onClose }: CardModalProps) {
+export function CardModal({ card, boardId, defaultColumnId, categories, columns, epics, nextPosition, onSave, onClose }: CardModalProps) {
   const [title, setTitle] = useState(card?.title || '');
   const [description, setDescription] = useState(card?.description || '');
   const [categoryId, setCategoryId] = useState(card?.category_id || categories[0]?.id || '');
@@ -40,7 +41,7 @@ export function CardModal({ card, boardId, defaultColumnId, categories, columns,
       column_id: columnId,
       epic_id: epicId || null,
       notes: notes.trim() || null,
-      position: 0,
+      position: card ? card.position : nextPosition,
     });
     setSaving(false);
   };

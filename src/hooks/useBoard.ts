@@ -58,9 +58,10 @@ export function useBoard() {
   }, []);
 
   const moveCardToColumn = useCallback(async (cardId: string, columnId: string) => {
-    await actions.moveCard(cardId, columnId);
-    setCards(prev => prev.map(c => c.id === cardId ? { ...c, column_id: columnId } : c));
-  }, []);
+    const nextPosition = cards.filter(c => c.column_id === columnId).length;
+    await actions.updateCard(cardId, { column_id: columnId, position: nextPosition });
+    setCards(prev => prev.map(c => c.id === cardId ? { ...c, column_id: columnId, position: nextPosition } : c));
+  }, [cards]);
 
   // ─── Epic actions ────────────────────────────────────────
 
