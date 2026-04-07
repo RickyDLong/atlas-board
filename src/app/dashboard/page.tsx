@@ -170,7 +170,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3">
           <AtlasLogo size={32} />
           <h1 className="text-lg font-semibold text-white tracking-tight">
-            Atlas Board <span className="text-[#555568] font-normal ml-2 text-sm">{board?.name}</span>
+            Atlas <span className="text-[#555568] font-normal ml-2 text-sm">{board?.name}</span>
           </h1>
         </div>
         <div className="flex items-center gap-2">

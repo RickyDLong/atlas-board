@@ -14,8 +14,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Atlas Board — Project Command Center",
-  description: "Personal project management board. Organize, prioritize, and ship.",
+  title: "Atlas — Forge Your Path",
+  description: "Your personal quest board. Plan your campaigns, track your progress, level up.",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32" },

@@ -44,8 +44,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <AtlasLogo size={48} className="rounded-xl mx-auto mb-4" />
-          <h1 className="text-2xl font-semibold text-white tracking-tight">Atlas Board</h1>
-          <p className="text-[#8888a0] text-sm mt-1">Sign in to your command center</p>
+          <h1 className="text-2xl font-semibold text-white tracking-tight">Atlas</h1>
+          <p className="text-[#8888a0] text-sm mt-1">Return to the Forge</p>
         </div>
 
         <div className="space-y-3 mb-6">

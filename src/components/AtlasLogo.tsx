@@ -13,7 +13,7 @@ export function AtlasLogo({ size = 32, className = '' }: AtlasLogoProps) {
     >
       <Image
         src="/axe-icon.svg"
-        alt="Atlas Board"
+        alt="Atlas"
         width={Math.round(size * 0.75)}
         height={Math.round(size * 0.75)}
         className="object-contain"

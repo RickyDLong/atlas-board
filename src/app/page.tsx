@@ -17,7 +17,7 @@ export default async function Home() {
       <nav className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e2e]">
         <div className="flex items-center gap-3">
           <AtlasLogo size={32} />
-          <span className="text-white font-semibold tracking-tight">Atlas Board</span>
+          <span className="text-white font-semibold tracking-tight">Atlas</span>
         </div>
         <div className="flex items-center gap-3">
           <Link
@@ -42,15 +42,15 @@ export default async function Home() {
         </div>
 
         <h1 className="text-5xl sm:text-6xl font-bold text-white tracking-tight leading-tight max-w-2xl">
-          Your Project
+          Forge Your
           <br />
           <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
-            Command Center
+            Path
           </span>
         </h1>
 
         <p className="mt-6 text-lg text-[#8888a0] max-w-md leading-relaxed">
-          Organize, prioritize, and ship. A Kanban board built for developers who mean business.
+          Plan your campaigns. Conquer your quests. Level up.
         </p>
 
         <div className="flex items-center gap-4 mt-10">

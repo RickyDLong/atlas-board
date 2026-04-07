@@ -72,7 +72,7 @@ export default function SignupPage() {
         <div className="text-center mb-8">
           <AtlasLogo size={48} className="rounded-xl mx-auto mb-4" />
           <h1 className="text-2xl font-semibold text-white tracking-tight">Create Account</h1>
-          <p className="text-[#8888a0] text-sm mt-1">Get your command center set up</p>
+          <p className="text-[#8888a0] text-sm mt-1">Forge your credentials</p>
         </div>
 
         <div className="space-y-3 mb-6">

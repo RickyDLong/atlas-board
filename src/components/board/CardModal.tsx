@@ -60,7 +60,7 @@ export function CardModal({ card, boardId, defaultColumnId, categories, columns,
           <div className="p-5 space-y-3.5">
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Title</label>
-              <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="What are you building?"
+              <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Name your quest..."
                 className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] transition-colors" autoFocus />
             </div>
             <div>

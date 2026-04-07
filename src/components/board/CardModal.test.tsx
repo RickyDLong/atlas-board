@@ -30,7 +30,7 @@ describe('CardModal', () => {
 
     it('renders all form fields', () => {
       render(<CardModal {...defaultProps} />);
-      expect(screen.getByPlaceholderText('What are you building?')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Name your quest...')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Brief description or goal...')).toBeInTheDocument();
       expect(screen.getByText('Category')).toBeInTheDocument();
       expect(screen.getByText('Priority')).toBeInTheDocument();
@@ -63,7 +63,7 @@ describe('CardModal', () => {
       const onSave = vi.fn().mockResolvedValue(undefined);
       render(<CardModal {...defaultProps} onSave={onSave} />);
 
-      await user.type(screen.getByPlaceholderText('What are you building?'), 'New feature');
+      await user.type(screen.getByPlaceholderText('Name your quest...'), 'New feature');
       await user.click(screen.getByText('Create'));
 
       await waitFor(() => {
