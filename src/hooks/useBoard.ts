@@ -13,9 +13,10 @@ export function useBoard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadBoard = useCallback(async () => {
+  const loadBoard = useCallback(async (retries = 3) => {
     try {
       setLoading(true);
+      setError(null);
       const b = await actions.getOrCreateBoard();
       setBoard(b);
 
@@ -31,7 +32,13 @@ export function useBoard() {
       setCards(crds);
       setEpics(eps);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load board');
+      const message = err instanceof Error ? err.message : 'Failed to load board';
+      // Auth lock contention — retry after a short delay
+      if (message.includes('lock') && message.includes('stolen') && retries > 0) {
+        await new Promise(r => setTimeout(r, 500 * (4 - retries)));
+        return loadBoard(retries - 1);
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }

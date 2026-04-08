@@ -127,11 +127,16 @@ export function BoardCard({ card, category, priority, isDoneColumn = false, onCl
         {aging && (
           <div className="flex items-center gap-0.5" title={aging.label} data-testid="shield-aging">
             {Array.from({ length: aging.count }).map((_, i) => (
-              <i
+              <svg
                 key={i}
-                className="ra ra-shield"
-                style={{ color: aging.color, fontSize: '11px' }}
-              />
+                width="11"
+                height="13"
+                viewBox="0 0 24 28"
+                fill={aging.color}
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M12 0L0 5v8c0 8.4 5.1 13.2 12 15 6.9-1.8 12-6.6 12-15V5L12 0z" />
+              </svg>
             ))}
           </div>
         )}

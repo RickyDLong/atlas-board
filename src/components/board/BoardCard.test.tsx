@@ -86,7 +86,7 @@ describe('BoardCard', () => {
     render(<BoardCard {...defaultProps} isDoneColumn={false} />);
     const shieldContainer = screen.getByTestId('shield-aging');
     expect(shieldContainer).toBeInTheDocument();
-    const shields = shieldContainer.querySelectorAll('.ra-shield');
+    const shields = shieldContainer.querySelectorAll('svg');
     expect(shields.length).toBeGreaterThan(0);
   });
 
@@ -99,9 +99,9 @@ describe('BoardCard', () => {
     const card = createMockCard({ column_changed_at: new Date().toISOString() });
     render(<BoardCard {...defaultProps} card={card} isDoneColumn={false} />);
     const shieldContainer = screen.getByTestId('shield-aging');
-    const shields = shieldContainer.querySelectorAll('.ra-shield');
+    const shields = shieldContainer.querySelectorAll('svg');
     expect(shields.length).toBe(1);
-    expect(shields[0]).toHaveStyle({ color: '#34d399' });
+    expect(shields[0]).toHaveAttribute('fill', '#34d399');
   });
 
   it('renders 2 yellow shields for a card 3 days old in column', () => {
@@ -110,9 +110,9 @@ describe('BoardCard', () => {
     const card = createMockCard({ column_changed_at: threeDaysAgo.toISOString() });
     render(<BoardCard {...defaultProps} card={card} isDoneColumn={false} />);
     const shieldContainer = screen.getByTestId('shield-aging');
-    const shields = shieldContainer.querySelectorAll('.ra-shield');
+    const shields = shieldContainer.querySelectorAll('svg');
     expect(shields.length).toBe(2);
-    expect(shields[0]).toHaveStyle({ color: '#fbbf24' });
+    expect(shields[0]).toHaveAttribute('fill', '#fbbf24');
   });
 
   it('renders 3 orange shields for a card 6 days old in column', () => {
@@ -121,9 +121,9 @@ describe('BoardCard', () => {
     const card = createMockCard({ column_changed_at: sixDaysAgo.toISOString() });
     render(<BoardCard {...defaultProps} card={card} isDoneColumn={false} />);
     const shieldContainer = screen.getByTestId('shield-aging');
-    const shields = shieldContainer.querySelectorAll('.ra-shield');
+    const shields = shieldContainer.querySelectorAll('svg');
     expect(shields.length).toBe(3);
-    expect(shields[0]).toHaveStyle({ color: '#fb923c' });
+    expect(shields[0]).toHaveAttribute('fill', '#fb923c');
   });
 
   it('renders 4 red shields for a card 8+ days old in column', () => {
@@ -132,18 +132,18 @@ describe('BoardCard', () => {
     const card = createMockCard({ column_changed_at: tenDaysAgo.toISOString() });
     render(<BoardCard {...defaultProps} card={card} isDoneColumn={false} />);
     const shieldContainer = screen.getByTestId('shield-aging');
-    const shields = shieldContainer.querySelectorAll('.ra-shield');
+    const shields = shieldContainer.querySelectorAll('svg');
     expect(shields.length).toBe(4);
-    expect(shields[0]).toHaveStyle({ color: '#f87171' });
+    expect(shields[0]).toHaveAttribute('fill', '#f87171');
   });
 
   it('falls back to updated_at when column_changed_at is null', () => {
     const card = createMockCard({ column_changed_at: null, updated_at: new Date().toISOString() });
     render(<BoardCard {...defaultProps} card={card} isDoneColumn={false} />);
     const shieldContainer = screen.getByTestId('shield-aging');
-    const shields = shieldContainer.querySelectorAll('.ra-shield');
+    const shields = shieldContainer.querySelectorAll('svg');
     expect(shields.length).toBe(1); // fresh — today
-    expect(shields[0]).toHaveStyle({ color: '#34d399' });
+    expect(shields[0]).toHaveAttribute('fill', '#34d399');
   });
 });
 

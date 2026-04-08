@@ -139,7 +139,7 @@ export default function DashboardPage() {
         <div className="text-center">
           <div className="text-[#f87171] text-sm mb-2">Failed to load board</div>
           <div className="text-[#555568] text-xs mb-4">{error}</div>
-          <button onClick={refresh} className="text-[#4a9eff] text-sm hover:underline">Retry</button>
+          <button onClick={() => refresh()} className="text-[#4a9eff] text-sm hover:underline">Retry</button>
         </div>
       </div>
     );
