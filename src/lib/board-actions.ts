@@ -65,9 +65,9 @@ export async function deleteColumn(id: string): Promise<void> {
 }
 
 export async function reorderColumns(cols: { id: string; position: number }[]): Promise<void> {
-  for (const col of cols) {
-    await supabase.from('columns').update({ position: col.position }).eq('id', col.id);
-  }
+  await Promise.all(
+    cols.map(col => supabase.from('columns').update({ position: col.position }).eq('id', col.id))
+  );
 }
 
 // ─── Categories ──────────────────────────────────────────────
@@ -221,9 +221,9 @@ export async function deleteSubtask(id: string): Promise<void> {
 }
 
 export async function reorderSubtasks(subtasks: { id: string; position: number }[]): Promise<void> {
-  for (const sub of subtasks) {
-    await supabase.from('subtasks').update({ position: sub.position }).eq('id', sub.id);
-  }
+  await Promise.all(
+    subtasks.map(sub => supabase.from('subtasks').update({ position: sub.position }).eq('id', sub.id))
+  );
 }
 
 // ─── User Preferences ────────────────────────────────────────

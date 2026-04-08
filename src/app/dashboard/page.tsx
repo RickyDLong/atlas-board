@@ -56,16 +56,10 @@ function DashboardContent() {
   } = useRealtimeBoard();
 
   const router = useRouter();
-  const { isGamified, toggleGamification } = useGamificationMode();
+  const { userId, isGamified, toggleGamification } = useGamificationMode();
   const [showWelcome, setShowWelcome] = useState(false);
   const undoRedo = useUndoRedo();
   const [activeUndoToast, setActiveUndoToast] = useState<{ description: string; actionId: string } | null>(null);
-
-  // Get userId from gamification context (which is set in parent)
-  const [userId, setUserId] = useState<string | null>(null);
-  useEffect(() => {
-    getCurrentUser().then(u => setUserId(u?.id || null));
-  }, []);
 
   // Check if user has seen onboarding
   useEffect(() => {
@@ -106,6 +100,14 @@ function DashboardContent() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [addToColumnId, setAddToColumnId] = useState<string | null>(null);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
+
+  // Pre-load subtasks when opening edit modal (moved out of render to avoid side effects)
+  useEffect(() => {
+    if (editingCard && !subtasks[editingCard.id]) {
+      loadSubtasks(editingCard.id);
+    }
+  }, [editingCard, subtasks, loadSubtasks]);
+
   const [detailCard, setDetailCard] = useState<Card | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showEpicPanel, setShowEpicPanel] = useState(false);
@@ -652,10 +654,6 @@ function DashboardContent() {
 
       {/* Card create/edit modal */}
       {(showAddModal || editingCard) && board && (() => {
-        // Load subtasks for the card being edited
-        if (editingCard && !subtasks[editingCard.id]) {
-          loadSubtasks(editingCard.id);
-        }
         return (
           <CardModal
             card={editingCard}

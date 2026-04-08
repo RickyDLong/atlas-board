@@ -21,13 +21,16 @@ type PostgresPayload<T> = {
   eventType: 'INSERT' | 'UPDATE' | 'DELETE';
 };
 
+/** How long to keep realtime handlers muted after a local mutation (ms) */
+const REALTIME_MUTE_MS = 500;
+
 // Strip internal setters from the public API
 type PublicBoardAPI = Omit<RealtimeBoardReturn, '__setCards' | '__setColumns' | '__setCategories' | '__setEpics' | '__setSubtasks'>;
 
 export function useRealtimeBoard(): PublicBoardAPI {
   const boardHook = useBoard();
   const {
-    board, cards,
+    board, columns, categories, cards, epics, subtasks, loading, error,
     __setCards, __setColumns, __setCategories, __setEpics, __setSubtasks,
     // Destructure all action methods so we can wrap them
     addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards,
@@ -36,7 +39,6 @@ export function useRealtimeBoard(): PublicBoardAPI {
     addCategory, editCategory, removeCategory,
     loadSubtasks, addSubtask, toggleSubtask, removeSubtask, editSubtask,
     refresh,
-    ...rest
   } = boardHook as BoardHookWithSetters;
 
   const muteRealtimeRef = useRef(false);
@@ -60,11 +62,11 @@ export function useRealtimeBoard(): PublicBoardAPI {
     try {
       return await fn();
     } finally {
-      // Keep muted for 500ms after the mutation completes to allow
+      // Keep muted after the mutation completes to allow
       // the CDC event to arrive and be ignored
       muteTimerRef.current = setTimeout(() => {
         muteRealtimeRef.current = false;
-      }, 500);
+      }, REALTIME_MUTE_MS);
     }
   }, []);
 
@@ -337,9 +339,7 @@ export function useRealtimeBoard(): PublicBoardAPI {
 
   // ─── Return wrapped API ─────────────────────────────────
   return useMemo(() => ({
-    ...rest,
-    board,
-    cards,
+    board, columns, categories, cards, epics, subtasks, loading, error,
     addCard: mutedAddCard,
     editCard: mutedEditCard,
     removeCard: mutedRemoveCard,
@@ -364,7 +364,7 @@ export function useRealtimeBoard(): PublicBoardAPI {
     editSubtask: mutedEditSubtask,
     refresh,
   }), [
-    rest, board, cards,
+    board, columns, categories, cards, epics, subtasks, loading, error,
     mutedAddCard, mutedEditCard, mutedRemoveCard, mutedMoveCardToColumn,
     mutedArchiveCard, mutedUnarchiveCard, mutedArchiveEpicCards,
     mutedAddEpic, mutedEditEpic, mutedRemoveEpic,

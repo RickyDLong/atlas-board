@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useCallback, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useCallback, useState, useEffect, useMemo, ReactNode } from 'react';
 import { updateUserPreferences, getUserPreferences } from '@/lib/board-actions';
 
 const CLEAN_COLUMN_NAMES: Record<string, string> = {
@@ -12,6 +12,7 @@ const CLEAN_COLUMN_NAMES: Record<string, string> = {
 };
 
 interface GamificationModeContextType {
+  userId: string | null;
   isGamified: boolean;
   toggleGamification: () => Promise<void>;
   columnDisplayName: (dbName: string) => string;
@@ -73,12 +74,13 @@ export function GamificationModeProvider({ userId, children }: GamificationModeP
     return dbName;
   }, [isGamified]);
 
-  const value: GamificationModeContextType = {
+  const value = useMemo<GamificationModeContextType>(() => ({
+    userId,
     isGamified,
     toggleGamification,
     columnDisplayName,
     loading,
-  };
+  }), [userId, isGamified, toggleGamification, columnDisplayName, loading]);
 
   return (
     <GamificationModeContext.Provider value={value}>
