@@ -40,7 +40,6 @@ export function ListView({ cards, categories, columns, epics, onCardClick }: Lis
   const [sortField, setSortField] = useState<SortField>('priority');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
-  const sortedCols = useMemo(() => [...columns].sort((a, b) => a.position - b.position), [columns]);
   const colMap = useMemo(() => Object.fromEntries(columns.map(c => [c.id, c])), [columns]);
   const catMap = useMemo(() => Object.fromEntries(categories.map(c => [c.id, c])), [categories]);
   const epicMap = useMemo(() => Object.fromEntries(epics.map(e => [e.id, e])), [epics]);
@@ -104,7 +103,7 @@ export function ListView({ cards, categories, columns, epics, onCardClick }: Lis
     return arr;
   }, [cards, sortField, sortDir, colMap, catMap, epicMap]);
 
-  const doneColId = sortedCols.length > 0 ? sortedCols[sortedCols.length - 1].id : '';
+  const doneColId = columns.find(c => c.is_done)?.id || '';
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);

@@ -9,11 +9,11 @@ export const mockBoard: Board = {
 };
 
 export const mockColumns: Column[] = [
-  { id: 'col-backlog', board_id: 'board-1', title: 'Quest Log', color: '#555568', position: 0, created_at: '2026-01-01T00:00:00Z' },
-  { id: 'col-upnext', board_id: 'board-1', title: 'Preparing', color: '#fbbf24', position: 1, created_at: '2026-01-01T00:00:00Z' },
-  { id: 'col-inprogress', board_id: 'board-1', title: 'In Battle', color: '#4a9eff', position: 2, created_at: '2026-01-01T00:00:00Z' },
-  { id: 'col-review', board_id: 'board-1', title: 'Loot Check', color: '#a855f7', position: 3, created_at: '2026-01-01T00:00:00Z' },
-  { id: 'col-done', board_id: 'board-1', title: 'Conquered', color: '#34d399', position: 4, created_at: '2026-01-01T00:00:00Z' },
+  { id: 'col-backlog', board_id: 'board-1', title: 'Quest Log', color: '#555568', position: 0, is_done: false, created_at: '2026-01-01T00:00:00Z' },
+  { id: 'col-upnext', board_id: 'board-1', title: 'Preparing', color: '#fbbf24', position: 1, is_done: false, created_at: '2026-01-01T00:00:00Z' },
+  { id: 'col-inprogress', board_id: 'board-1', title: 'In Battle', color: '#4a9eff', position: 2, is_done: false, created_at: '2026-01-01T00:00:00Z' },
+  { id: 'col-review', board_id: 'board-1', title: 'Loot Check', color: '#a855f7', position: 3, is_done: false, created_at: '2026-01-01T00:00:00Z' },
+  { id: 'col-done', board_id: 'board-1', title: 'Conquered', color: '#34d399', position: 4, is_done: true, created_at: '2026-01-01T00:00:00Z' },
 ];
 
 export const mockCategories: Category[] = [

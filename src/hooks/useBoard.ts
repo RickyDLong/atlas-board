@@ -118,7 +118,7 @@ export function useBoard() {
     setColumns(prev => [...prev, col]);
   }, [board, columns.length]);
 
-  const editColumn = useCallback(async (id: string, updates: Partial<Pick<Column, 'title' | 'color' | 'position'>>) => {
+  const editColumn = useCallback(async (id: string, updates: Partial<Pick<Column, 'title' | 'color' | 'position' | 'is_done'>>) => {
     await actions.updateColumn(id, updates);
     setColumns(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
   }, []);

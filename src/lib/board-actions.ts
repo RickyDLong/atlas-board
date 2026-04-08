@@ -28,7 +28,7 @@ export async function getOrCreateBoard(): Promise<Board> {
   if (error) throw error;
 
   const colInserts = DEFAULT_COLUMNS.map((col, i) => ({
-    board_id: board.id, title: col.title, color: col.color, position: i,
+    board_id: board.id, title: col.title, color: col.color, position: i, is_done: col.is_done,
   }));
   await supabase.from('columns').insert(colInserts);
 
@@ -48,13 +48,13 @@ export async function getColumns(boardId: string): Promise<Column[]> {
   return data as Column[];
 }
 
-export async function createColumn(boardId: string, title: string, color: string, position: number): Promise<Column> {
-  const { data, error } = await supabase.from('columns').insert({ board_id: boardId, title, color, position }).select().single();
+export async function createColumn(boardId: string, title: string, color: string, position: number, is_done: boolean = false): Promise<Column> {
+  const { data, error } = await supabase.from('columns').insert({ board_id: boardId, title, color, position, is_done }).select().single();
   if (error) throw error;
   return data as Column;
 }
 
-export async function updateColumn(id: string, updates: Partial<Pick<Column, 'title' | 'color' | 'position'>>): Promise<void> {
+export async function updateColumn(id: string, updates: Partial<Pick<Column, 'title' | 'color' | 'position' | 'is_done'>>): Promise<void> {
   const { error } = await supabase.from('columns').update(updates).eq('id', id);
   if (error) throw error;
 }

@@ -81,9 +81,8 @@ export function CalendarView({ cards, categories, columns, onCardClick, onAddCar
 
   const defaultColumnId = columns[0]?.id || '';
 
-  // Determine last column (Done) for dimming
-  const sortedCols = [...columns].sort((a, b) => a.position - b.position);
-  const doneColId = sortedCols.length > 0 ? sortedCols[sortedCols.length - 1].id : '';
+  // Determine Done column for dimming
+  const doneColId = columns.find(c => c.is_done)?.id || '';
 
   return (
     <div className="flex flex-1 min-h-0">

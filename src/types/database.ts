@@ -12,6 +12,7 @@ export interface Column {
   title: string;
   color: string;
   position: number;
+  is_done: boolean;
   created_at: string;
 }
 
@@ -105,11 +106,11 @@ export const EPIC_STATUSES: { id: EpicStatus; label: string; color: string }[] =
 export const EFFORTS: Effort[] = ['XS', 'S', 'M', 'L', 'XL'];
 
 export const DEFAULT_COLUMNS = [
-  { title: 'Quest Log', color: '#555568' },
-  { title: 'Preparing', color: '#fbbf24' },
-  { title: 'In Battle', color: '#4a9eff' },
-  { title: 'Loot Check', color: '#a855f7' },
-  { title: 'Conquered', color: '#34d399' },
+  { title: 'Quest Log', color: '#555568', is_done: false },
+  { title: 'Preparing', color: '#fbbf24', is_done: false },
+  { title: 'In Battle', color: '#4a9eff', is_done: false },
+  { title: 'Loot Check', color: '#a855f7', is_done: false },
+  { title: 'Conquered', color: '#34d399', is_done: true },
 ];
 
 export const DEFAULT_CATEGORIES = [

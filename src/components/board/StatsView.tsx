@@ -48,7 +48,7 @@ function BarChart({ items, maxValue }: { items: { label: string; value: number; 
 
 export function StatsView({ cards, categories, columns, epics }: StatsViewProps) {
   const sortedCols = useMemo(() => [...columns].sort((a, b) => a.position - b.position), [columns]);
-  const doneCol = sortedCols.length > 0 ? sortedCols[sortedCols.length - 1] : undefined;
+  const doneCol = columns.find(c => c.is_done);
 
   const stats = useMemo(() => {
     const total = cards.length;

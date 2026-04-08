@@ -72,8 +72,7 @@ export function EpicPanel({
             )}
             {epics.map(epic => {
               const epicCards = cards.filter(c => c.epic_id === epic.id);
-              const sortedCols = [...columns].sort((a, b) => a.position - b.position);
-              const doneCol = sortedCols.length > 0 ? sortedCols[sortedCols.length - 1] : undefined;
+              const doneCol = columns.find(c => c.is_done);
               const doneCount = doneCol ? epicCards.filter(c => c.column_id === doneCol.id).length : 0;
               const progress = epicCards.length > 0 ? Math.round((doneCount / epicCards.length) * 100) : 0;
               const status = EPIC_STATUSES.find(s => s.id === epic.status);
@@ -146,8 +145,7 @@ function EpicDetail({
   onArchive?: () => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
-  const sortedCols = [...columns].sort((a, b) => a.position - b.position);
-  const doneCol = sortedCols.length > 0 ? sortedCols[sortedCols.length - 1] : undefined;
+  const doneCol = columns.find(c => c.is_done);
   const doneCount = doneCol ? cards.filter(c => c.column_id === doneCol.id).length : 0;
   const progress = cards.length > 0 ? Math.round((doneCount / cards.length) * 100) : 0;
   const status = EPIC_STATUSES.find(s => s.id === epic.status);

@@ -9,7 +9,7 @@ interface BoardColumnProps {
   column: Column;
   cards: Card[];
   categories: Category[];
-  columns: Column[];
+  columns?: Column[];
   subtasks?: Record<string, Subtask[]>;
   onAddCard: (columnId: string) => void;
   onCardClick: (card: Card) => void;
@@ -18,7 +18,7 @@ interface BoardColumnProps {
 }
 
 export function BoardColumn({
-  column, cards, categories, columns, subtasks = {}, onAddCard, onCardClick, onCardMenu, onDrop,
+  column, cards, categories, subtasks = {}, onAddCard, onCardClick, onCardMenu, onDrop,
 }: BoardColumnProps) {
   const { columnDisplayName, isGamified } = useGamificationMode();
 
@@ -69,8 +69,7 @@ export function BoardColumn({
         {cards.map((card) => {
           const cat = categories.find((c) => c.id === card.category_id);
           const pri = PRIORITIES.find((p) => p.id === card.priority);
-          const sorted = [...columns].sort((a, b) => a.position - b.position);
-          const isDone = sorted.length > 0 && column.id === sorted[sorted.length - 1].id;
+          const isDone = column.is_done;
           const cardSubtasks = subtasks[card.id] || [];
           const subtaskProgress = cardSubtasks.length > 0 ? {
             done: cardSubtasks.filter(s => s.completed).length,

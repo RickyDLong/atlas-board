@@ -15,7 +15,7 @@ export interface XPToast {
   newBadges: string[];
 }
 
-export function useGamification(userId: string | null, boardId: string | null) {
+export function useGamification(userId: string | null, boardId: string | null, showToasts: boolean = true) {
   const [level, setLevel] = useState<UserLevel | null>(null);
   const [streak, setStreak] = useState<UserStreak | null>(null);
   const [badges, setBadges] = useState<UserBadge[]>([]);
@@ -96,12 +96,12 @@ export function useGamification(userId: string | null, boardId: string | null) {
         const fresh = await gamification.getUserBadges(userId);
         setBadges(fresh);
       }
-      addToast(result);
+      if (showToasts) addToast(result);
       return result;
     } catch {
       return null;
     }
-  }, [userId, boardId, addToast]);
+  }, [userId, boardId, addToast, showToasts]);
 
   // Convenience: award XP for completing a card
   const awardCardCompletion = useCallback(async (card: Card) => {
@@ -127,12 +127,12 @@ export function useGamification(userId: string | null, boardId: string | null) {
           const fresh = await gamification.getUserBadges(userId);
           setBadges(fresh);
         }
-        addToast(result);
+        if (showToasts) addToast(result);
       }
     } catch {
       // Non-blocking
     }
-  }, [userId, boardId, addToast]);
+  }, [userId, boardId, addToast, showToasts]);
 
   const dismissToast = useCallback((id: string) => {
     setXpToasts(prev => prev.filter(t => t.id !== id));

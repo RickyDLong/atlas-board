@@ -14,6 +14,7 @@ import { LevelUpCelebration } from '@/components/board/LevelUpCelebration';
 import { BadgePanel } from '@/components/board/BadgePanel';
 import { UndoToast } from '@/components/board/UndoToast';
 import { WelcomeModal } from '@/components/board/WelcomeModal';
+import { DetailModal } from '@/components/board/DetailModal';
 import { PRIORITIES } from '@/types/database';
 import type { Card } from '@/types/database';
 import { signOut, getCurrentUser, getUserPreferences, updateUserPreferences } from '@/lib/board-actions';
@@ -84,7 +85,7 @@ function DashboardContent() {
     checkOnboarding();
   }, [userId, loading]);
 
-  const gam = useGamification(userId, board?.id || null);
+  const gam = useGamification(userId, board?.id || null, isGamified);
   const [showBadgePanel, setShowBadgePanel] = useState(false);
   const [levelUpDisplay, setLevelUpDisplay] = useState<{ level: number; title: string; color: string } | null>(null);
   const [prevLevel, setPrevLevel] = useState(0);
@@ -161,11 +162,10 @@ function DashboardContent() {
 
   const gamifiedMoveCard = useCallback(async (cardId: string, columnId: string) => {
     await moveCardToColumn(cardId, columnId);
-    // Check if moved to Done column (last column by position)
-    const sorted = [...columns].sort((a, b) => a.position - b.position);
-    const lastCol = sorted.length > 0 ? sorted[sorted.length - 1] : undefined;
+    // Check if moved to Done column (uses is_done flag)
+    const doneColumn = columns.find(c => c.is_done);
     // Always track completion XP — toggle only controls UI toasts/animations
-    if (lastCol && columnId === lastCol.id) {
+    if (doneColumn && columnId === doneColumn.id) {
       const card = cards.find(c => c.id === cardId);
       if (card) {
         await gam.awardCardCompletion(card);
@@ -331,8 +331,7 @@ function DashboardContent() {
 
   const getColumnCards = (colId: string) => filteredCards.filter(c => c.column_id === colId).sort((a, b) => a.position - b.position);
 
-  const sortedCols = [...columns].sort((a, b) => a.position - b.position);
-  const doneCol = sortedCols.length > 0 ? sortedCols[sortedCols.length - 1] : undefined;
+  const doneCol = columns.find(c => c.is_done);
   const totalActive = cards.filter(c => !doneCol || c.column_id !== doneCol.id).length;
 
   return (
@@ -810,119 +809,3 @@ function DashboardContent() {
   );
 }
 
-// ─── Detail Modal (inline) ─────────────────────────────────
-
-function DetailModal({
-  card, categories, columns, epics, onEdit, onClose, onDelete, onMove, onViewEpic, onArchive,
-}: {
-  card: Card;
-  categories: import('@/types/database').Category[];
-  columns: import('@/types/database').Column[];
-  epics: import('@/types/database').Epic[];
-  onEdit: () => void;
-  onClose: () => void;
-  onDelete: () => void;
-  onMove: (colId: string) => void;
-  onViewEpic: (epicId: string) => void;
-  onArchive?: () => void;
-}) {
-  const cat = categories.find(c => c.id === card.category_id);
-  const pri = PRIORITIES.find(p => p.id === card.priority);
-  const col = columns.find(c => c.id === card.column_id);
-  const epic = epics.find(e => e.id === card.epic_id);
-
-  return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1000] backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-[#12121a] border border-[#2a2a3a] rounded-xl w-[480px] max-w-[95vw] max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e2e]">
-          <h2 className="text-[15px] font-semibold text-white flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: cat?.color || '#555' }} />
-            {card.title}
-          </h2>
-          <button className="text-[#555568] hover:text-white text-lg px-2 py-1 rounded hover:bg-[#22222f] transition-all cursor-pointer" onClick={onClose}>&times;</button>
-        </div>
-        <div className="p-5 space-y-3">
-          {epic && (
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Epic</div>
-              <button
-                onClick={() => onViewEpic(epic.id)}
-                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium border cursor-pointer hover:brightness-125 transition-all"
-                style={{ borderColor: epic.color + '44', color: epic.color, background: epic.color + '11' }}
-              >
-                &#9670; {epic.name}
-              </button>
-            </div>
-          )}
-          {card.description && (
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Description</div>
-              <div className="text-[13px] text-[#e8e8f0] leading-relaxed">{card.description}</div>
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Category</div>
-              <div className="text-[13px]" style={{ color: cat?.color }}>{cat?.label || '—'}</div>
-            </div>
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Priority</div>
-              <div className="text-[13px]" style={{ color: pri?.color }}>{pri?.label || '—'}</div>
-            </div>
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Effort</div>
-              <div className="text-[13px] font-mono">{card.effort || '—'}</div>
-            </div>
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Status</div>
-              <div className="text-[13px]">{col?.title || '—'}</div>
-            </div>
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Due Date</div>
-              <div className="text-[13px]">
-                {card.due_date ? (() => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  const due = new Date(card.due_date + 'T00:00:00');
-                  const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                  const isOverdue = diffDays < 0;
-                  const color = isOverdue ? '#f87171' : diffDays === 0 ? '#fbbf24' : '#e8e8f0';
-                  return <span style={{ color }}>{new Date(card.due_date).toLocaleDateString()}{isOverdue ? ' (overdue)' : diffDays === 0 ? ' (today)' : ''}</span>;
-                })() : '—'}
-              </div>
-            </div>
-          </div>
-          {card.notes && (
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Notes</div>
-              <div className="text-[13px] text-[#e8e8f0] whitespace-pre-wrap leading-relaxed">{card.notes}</div>
-            </div>
-          )}
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Move to</div>
-            <div className="flex gap-1.5 flex-wrap">
-              {columns.filter(c => c.id !== card.column_id).map(c => (
-                <button key={c.id} onClick={() => onMove(c.id)}
-                  className="px-2.5 py-1 text-xs text-[#8888a0] border border-[#2a2a3a] rounded-md hover:bg-[#1a1a26] hover:text-white transition-all cursor-pointer">
-                  {c.title}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center justify-between px-5 py-3 border-t border-[#1e1e2e]">
-          <div className="flex gap-2">
-            <button onClick={onDelete} className="text-xs text-[#f87171] hover:bg-[#f8717110] px-3 py-1.5 rounded-md transition-all cursor-pointer">Delete</button>
-            {onArchive && (
-              <button onClick={onArchive} className="text-xs text-[#a855f7] hover:bg-[#a855f710] px-3 py-1.5 rounded-md transition-all cursor-pointer">Archive</button>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <button onClick={onClose} className="text-xs text-[#8888a0] border border-[#2a2a3a] px-3 py-1.5 rounded-md hover:bg-[#1a1a26] transition-all cursor-pointer">Close</button>
-            <button onClick={onEdit} className="text-xs text-white bg-[#4a9eff] px-3 py-1.5 rounded-md hover:brightness-110 transition-all cursor-pointer">Edit</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
