@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import type { Card, Category } from '@/types/database';
+import type { Card, Category, Label } from '@/types/database';
 
 interface BoardCardProps {
   card: Card;
   category?: Category;
   priority?: { id: string; label: string; color: string };
   subtaskProgress?: { done: number; total: number } | null;
+  cardLabels?: Label[];
   isDoneColumn?: boolean;
   showShields?: boolean;
   onClick: () => void;
@@ -31,7 +32,7 @@ export function getShieldAging(card: Card, isDoneColumn: boolean): { count: numb
   return { count: 4, color: '#f87171', label: `${days} days in column` };
 }
 
-export function BoardCard({ card, category, priority, subtaskProgress = null, isDoneColumn = false, showShields = true, onClick, onMenu }: BoardCardProps) {
+export function BoardCard({ card, category, priority, subtaskProgress = null, cardLabels = [], isDoneColumn = false, showShields = true, onClick, onMenu }: BoardCardProps) {
   const [dragging, setDragging] = useState(false);
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -91,6 +92,15 @@ export function BoardCard({ card, category, priority, subtaskProgress = null, is
               {category.label}
             </span>
           )}
+          {cardLabels.map(lbl => (
+            <span
+              key={lbl.id}
+              className="text-[9px] font-medium px-1.5 py-0.5 rounded"
+              style={{ background: lbl.color + '22', color: lbl.color }}
+            >
+              {lbl.name}
+            </span>
+          ))}
           {priority && (
             <span
               className="text-[10px] font-medium px-1.5 py-0.5 rounded uppercase tracking-wide border"
@@ -102,6 +112,11 @@ export function BoardCard({ card, category, priority, subtaskProgress = null, is
           {card.effort && (
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded uppercase font-mono text-[#555568] bg-[#1a1a26]">
               {card.effort}
+            </span>
+          )}
+          {card.recurrence_rule && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded text-[#a855f7] bg-[#a855f710]" title={`Repeats ${card.recurrence_rule}`}>
+              ↻ {card.recurrence_rule}
             </span>
           )}
           {subtaskProgress && subtaskProgress.total > 0 && (

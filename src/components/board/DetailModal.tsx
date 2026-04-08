@@ -1,7 +1,12 @@
 'use client';
 
-import type { Card, Category, Column, Epic } from '@/types/database';
+import { useState } from 'react';
+import type { Card, Category, Column, Epic, CardRelationship, RelationshipType } from '@/types/database';
 import { PRIORITIES } from '@/types/database';
+import { ActivityLog } from './ActivityLog';
+import { CardComments } from './CardComments';
+import { CardRelationships } from './CardRelationships';
+import { CardAttachments } from './CardAttachments';
 
 interface DetailModalProps {
   card: Card;
@@ -14,11 +19,19 @@ interface DetailModalProps {
   onMove: (colId: string) => void;
   onViewEpic: (epicId: string) => void;
   onArchive?: () => void;
+  allCards?: Card[];
+  cardRelationships?: CardRelationship[];
+  onAddRelationship?: (sourceCardId: string, targetCardId: string, type: RelationshipType) => Promise<CardRelationship | undefined>;
+  onRemoveRelationship?: (id: string) => Promise<void>;
+  onViewCard?: (cardId: string) => void;
 }
 
 export function DetailModal({
   card, categories, columns, epics, onEdit, onClose, onDelete, onMove, onViewEpic, onArchive,
+  allCards = [], cardRelationships = [], onAddRelationship, onRemoveRelationship, onViewCard,
 }: DetailModalProps) {
+  const [showActivity, setShowActivity] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const cat = categories.find(c => c.id === card.category_id);
   const pri = PRIORITIES.find(p => p.id === card.priority);
   const col = columns.find(c => c.id === card.column_id);
@@ -91,6 +104,59 @@ export function DetailModal({
               <div className="text-[13px] text-[#e8e8f0] whitespace-pre-wrap leading-relaxed">{card.notes}</div>
             </div>
           )}
+          {/* Relationships */}
+          {onAddRelationship && onRemoveRelationship && (
+            <div className="border-t border-[#1e1e2e] pt-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Relationships</div>
+              <CardRelationships
+                cardId={card.id}
+                cards={allCards}
+                relationships={cardRelationships}
+                onAdd={onAddRelationship}
+                onRemove={onRemoveRelationship}
+                onViewCard={onViewCard}
+              />
+            </div>
+          )}
+
+          {/* Attachments */}
+          <div className="border-t border-[#1e1e2e] pt-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Attachments</div>
+            <CardAttachments cardId={card.id} boardId={card.board_id} />
+          </div>
+
+          {/* Comments */}
+          <div className="border-t border-[#1e1e2e] pt-3">
+            <button
+              onClick={() => setShowComments(!showComments)}
+              className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-[#555568] hover:text-[#8888a0] transition-colors cursor-pointer mb-1"
+            >
+              <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" className={`transition-transform ${showComments ? 'rotate-90' : ''}`}>
+                <path d="M2 1l4 3-4 3V1z" />
+              </svg>
+              Comments
+            </button>
+            {showComments && (
+              <CardComments cardId={card.id} boardId={card.board_id} />
+            )}
+          </div>
+
+          {/* Activity Log */}
+          <div className="border-t border-[#1e1e2e] pt-3">
+            <button
+              onClick={() => setShowActivity(!showActivity)}
+              className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-[#555568] hover:text-[#8888a0] transition-colors cursor-pointer mb-1"
+            >
+              <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" className={`transition-transform ${showActivity ? 'rotate-90' : ''}`}>
+                <path d="M2 1l4 3-4 3V1z" />
+              </svg>
+              Activity
+            </button>
+            {showActivity && (
+              <ActivityLog boardId={card.board_id} cardId={card.id} columns={columns} />
+            )}
+          </div>
+
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Move to</div>
             <div className="flex gap-1.5 flex-wrap">

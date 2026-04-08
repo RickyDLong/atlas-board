@@ -1,14 +1,18 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { Card, Category, Column, Epic } from '@/types/database';
+import type { Card, Category, Column, Epic, ColumnTransition, CfdSnapshot } from '@/types/database';
 import { PRIORITIES } from '@/types/database';
+import { computeCycleTimeMetrics } from '@/lib/board-actions';
+import { CumulativeFlowDiagram } from './CumulativeFlowDiagram';
 
 interface StatsViewProps {
   cards: Card[];
   categories: Category[];
   columns: Column[];
   epics: Epic[];
+  transitions?: ColumnTransition[];
+  cfdSnapshots?: CfdSnapshot[];
 }
 
 function StatCard({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
@@ -46,7 +50,7 @@ function BarChart({ items, maxValue }: { items: { label: string; value: number; 
   );
 }
 
-export function StatsView({ cards, categories, columns, epics }: StatsViewProps) {
+export function StatsView({ cards, categories, columns, epics, transitions = [], cfdSnapshots = [] }: StatsViewProps) {
   const sortedCols = useMemo(() => [...columns].sort((a, b) => a.position - b.position), [columns]);
   const doneCol = columns.find(c => c.is_done);
 
@@ -129,6 +133,11 @@ export function StatsView({ cards, categories, columns, epics }: StatsViewProps)
     return { total, done, active, byColumn, byCategory, byPriority, overdue, dueThisWeek, noDueDate, avgAge, epicProgress };
   }, [cards, categories, sortedCols, doneCol, epics]);
 
+  const cycleMetrics = useMemo(() => {
+    if (transitions.length === 0) return null;
+    return computeCycleTimeMetrics(transitions, columns);
+  }, [transitions, columns]);
+
   const maxByCol = Math.max(...stats.byColumn.map(b => b.value), 1);
   const maxByCat = Math.max(...stats.byCategory.map(b => b.value), 1);
   const maxByPri = Math.max(...stats.byPriority.map(b => b.value), 1);
@@ -196,6 +205,112 @@ export function StatsView({ cards, categories, columns, epics }: StatsViewProps)
           )}
         </div>
       </div>
+
+      {/* Cycle Time Metrics */}
+      {cycleMetrics && cycleMetrics.completedCount > 0 && (
+        <div className="bg-[#12121a] border border-[#1e1e2e] rounded-xl p-5">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-4">Cycle Time</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Avg Cycle Time</div>
+              <div className="text-xl font-bold font-mono text-[#4a9eff]">{cycleMetrics.avgCycleTime.toFixed(1)}d</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Cards Measured</div>
+              <div className="text-xl font-bold font-mono text-[#e8e8f0]">{cycleMetrics.completedCount}</div>
+            </div>
+            {cycleMetrics.fastestCard && (
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Fastest</div>
+                <div className="text-xl font-bold font-mono text-[#34d399]">{cycleMetrics.fastestCard.days.toFixed(1)}d</div>
+                <div className="text-[10px] text-[#555568] truncate">
+                  {cards.find(c => c.id === cycleMetrics.fastestCard!.cardId)?.title || 'Unknown'}
+                </div>
+              </div>
+            )}
+            {cycleMetrics.slowestCard && (
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Slowest</div>
+                <div className="text-xl font-bold font-mono text-[#f87171]">{cycleMetrics.slowestCard.days.toFixed(1)}d</div>
+                <div className="text-[10px] text-[#555568] truncate">
+                  {cards.find(c => c.id === cycleMetrics.slowestCard!.cardId)?.title || 'Unknown'}
+                </div>
+              </div>
+            )}
+          </div>
+          <h4 className="text-[10px] font-semibold uppercase tracking-wider text-[#555568] mb-2">Avg Time per Column</h4>
+          <div className="space-y-2">
+            {cycleMetrics.avgTimePerColumn
+              .filter(ct => ct.avgDays > 0)
+              .map(ct => {
+                const col = columns.find(c => c.id === ct.columnId);
+                if (!col) return null;
+                const maxDays = Math.max(...cycleMetrics.avgTimePerColumn.map(x => x.avgDays), 1);
+                return (
+                  <div key={ct.columnId} className="flex items-center gap-2">
+                    <span className="text-[11px] text-[#8888a0] w-20 truncate text-right flex-shrink-0">{col.title}</span>
+                    <div className="flex-1 h-6 bg-[#1a1a26] rounded-md overflow-hidden relative">
+                      <div
+                        className="h-full rounded-md transition-all duration-500"
+                        style={{
+                          width: `${(ct.avgDays / maxDays) * 100}%`,
+                          background: col.color,
+                          opacity: 0.7,
+                        }}
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono font-semibold text-[#e8e8f0]">
+                        {ct.avgDays.toFixed(1)}d
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* Time Tracking Summary */}
+      {(() => {
+        const tracked = cards.filter(c => c.estimated_hours || c.actual_hours);
+        if (tracked.length === 0) return null;
+        const totalEst = tracked.reduce((s, c) => s + (c.estimated_hours || 0), 0);
+        const totalAct = tracked.reduce((s, c) => s + (c.actual_hours || 0), 0);
+        const withBoth = tracked.filter(c => c.estimated_hours && c.actual_hours);
+        const accuracy = withBoth.length > 0
+          ? Math.round((withBoth.reduce((s, c) => s + (c.actual_hours || 0), 0) / withBoth.reduce((s, c) => s + (c.estimated_hours || 0), 0)) * 100)
+          : null;
+        return (
+          <div className="bg-[#12121a] border border-[#1e1e2e] rounded-xl p-5">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-4">Time Tracking</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Est. Total</div>
+                <div className="text-xl font-bold font-mono text-[#4a9eff]">{totalEst.toFixed(1)}h</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Actual Total</div>
+                <div className="text-xl font-bold font-mono text-[#e8e8f0]">{totalAct.toFixed(1)}h</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Tracked Cards</div>
+                <div className="text-xl font-bold font-mono text-[#8888a0]">{tracked.length}</div>
+              </div>
+              {accuracy !== null && (
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Accuracy</div>
+                  <div className={`text-xl font-bold font-mono ${accuracy > 110 ? 'text-[#f87171]' : accuracy > 90 ? 'text-[#fbbf24]' : 'text-[#34d399]'}`}>
+                    {accuracy}%
+                  </div>
+                  <div className="text-[10px] text-[#555568]">{accuracy > 100 ? 'Over estimate' : 'Under estimate'}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Cumulative Flow Diagram */}
+      <CumulativeFlowDiagram snapshots={cfdSnapshots} columns={columns} />
 
       {/* Cards needing attention */}
       {stats.noDueDate > 0 && (

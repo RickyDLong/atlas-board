@@ -9,11 +9,11 @@ export const mockBoard: Board = {
 };
 
 export const mockColumns: Column[] = [
-  { id: 'col-backlog', board_id: 'board-1', title: 'Quest Log', color: '#555568', position: 0, is_done: false, created_at: '2026-01-01T00:00:00Z' },
-  { id: 'col-upnext', board_id: 'board-1', title: 'Preparing', color: '#fbbf24', position: 1, is_done: false, created_at: '2026-01-01T00:00:00Z' },
-  { id: 'col-inprogress', board_id: 'board-1', title: 'In Battle', color: '#4a9eff', position: 2, is_done: false, created_at: '2026-01-01T00:00:00Z' },
-  { id: 'col-review', board_id: 'board-1', title: 'Loot Check', color: '#a855f7', position: 3, is_done: false, created_at: '2026-01-01T00:00:00Z' },
-  { id: 'col-done', board_id: 'board-1', title: 'Conquered', color: '#34d399', position: 4, is_done: true, created_at: '2026-01-01T00:00:00Z' },
+  { id: 'col-backlog', board_id: 'board-1', title: 'Quest Log', color: '#555568', position: 0, is_done: false, wip_limit: null, created_at: '2026-01-01T00:00:00Z' },
+  { id: 'col-upnext', board_id: 'board-1', title: 'Preparing', color: '#fbbf24', position: 1, is_done: false, wip_limit: 5, created_at: '2026-01-01T00:00:00Z' },
+  { id: 'col-inprogress', board_id: 'board-1', title: 'In Battle', color: '#4a9eff', position: 2, is_done: false, wip_limit: 3, created_at: '2026-01-01T00:00:00Z' },
+  { id: 'col-review', board_id: 'board-1', title: 'Loot Check', color: '#a855f7', position: 3, is_done: false, wip_limit: null, created_at: '2026-01-01T00:00:00Z' },
+  { id: 'col-done', board_id: 'board-1', title: 'Conquered', color: '#34d399', position: 4, is_done: true, wip_limit: null, created_at: '2026-01-01T00:00:00Z' },
 ];
 
 export const mockCategories: Category[] = [
@@ -39,31 +39,31 @@ export const mockCards: Card[] = [
   {
     id: 'card-1', board_id: 'board-1', column_id: 'col-backlog', category_id: 'cat-side', epic_id: 'epic-1',
     title: 'Add dark mode', description: 'Implement theme toggle', priority: 'medium', effort: 'M',
-    notes: null, due_date: '2026-04-15', archived_at: null, position: 0, column_changed_at: '2026-03-20T00:00:00Z',
+    notes: null, due_date: '2026-04-15', estimated_hours: 4, actual_hours: null, archived_at: null, position: 0, column_changed_at: '2026-03-20T00:00:00Z', recurrence_rule: null, recurrence_source_id: null,
     created_at: '2026-03-01T00:00:00Z', updated_at: '2026-03-20T00:00:00Z',
   },
   {
     id: 'card-2', board_id: 'board-1', column_id: 'col-inprogress', category_id: 'cat-career', epic_id: null,
     title: 'Update resume', description: 'Add new projects', priority: 'high', effort: 'S',
-    notes: 'Focus on frontend work', due_date: '2026-04-01', archived_at: null, position: 0, column_changed_at: '2026-04-01T00:00:00Z',
+    notes: 'Focus on frontend work', due_date: '2026-04-01', estimated_hours: 2, actual_hours: 1.5, archived_at: null, position: 0, column_changed_at: '2026-04-01T00:00:00Z', recurrence_rule: null, recurrence_source_id: null,
     created_at: '2026-03-10T00:00:00Z', updated_at: '2026-04-01T00:00:00Z',
   },
   {
     id: 'card-3', board_id: 'board-1', column_id: 'col-done', category_id: 'cat-side', epic_id: 'epic-1',
     title: 'Setup project', description: 'Initial scaffolding', priority: 'critical', effort: 'XS',
-    notes: null, due_date: '2026-02-01', archived_at: null, position: 0, column_changed_at: '2026-02-01T00:00:00Z',
+    notes: null, due_date: '2026-02-01', estimated_hours: 1, actual_hours: 0.75, archived_at: null, position: 0, column_changed_at: '2026-02-01T00:00:00Z', recurrence_rule: null, recurrence_source_id: null,
     created_at: '2026-01-15T00:00:00Z', updated_at: '2026-02-01T00:00:00Z',
   },
   {
     id: 'card-4', board_id: 'board-1', column_id: 'col-backlog', category_id: null, epic_id: null,
     title: 'No category card', description: null, priority: 'low', effort: null,
-    notes: null, due_date: null, archived_at: null, position: 1, column_changed_at: '2026-03-15T00:00:00Z',
+    notes: null, due_date: null, estimated_hours: null, actual_hours: null, archived_at: null, position: 1, column_changed_at: '2026-03-15T00:00:00Z', recurrence_rule: null, recurrence_source_id: null,
     created_at: '2026-03-15T00:00:00Z', updated_at: '2026-03-15T00:00:00Z',
   },
   {
     id: 'card-5', board_id: 'board-1', column_id: 'col-upnext', category_id: 'cat-life', epic_id: 'epic-2',
     title: 'Overdue task', description: 'This is past due', priority: 'high', effort: 'L',
-    notes: null, due_date: '2026-03-01', archived_at: null, position: 0, column_changed_at: '2026-03-01T00:00:00Z',
+    notes: null, due_date: '2026-03-01', estimated_hours: 8, actual_hours: null, archived_at: null, position: 0, column_changed_at: '2026-03-01T00:00:00Z', recurrence_rule: null, recurrence_source_id: null,
     created_at: '2026-02-20T00:00:00Z', updated_at: '2026-03-01T00:00:00Z',
   },
 ];
@@ -81,9 +81,13 @@ export function createMockCard(overrides: Partial<Card> = {}): Card {
     effort: null,
     notes: null,
     due_date: null,
+    estimated_hours: null,
+    actual_hours: null,
     archived_at: null,
     position: 0,
     column_changed_at: new Date().toISOString(),
+    recurrence_rule: null,
+    recurrence_source_id: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     ...overrides,

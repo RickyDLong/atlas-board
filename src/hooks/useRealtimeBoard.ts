@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { useBoard } from '@/hooks/useBoard';
 import { createClient } from '@/lib/supabase/client';
-import type { Card, Column, Category, Epic, Subtask } from '@/types/database';
+import type { Card, Column, Category, Epic, Subtask, ColumnTransition } from '@/types/database';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 type RealtimeBoardReturn = ReturnType<typeof useBoard>;
@@ -13,6 +13,7 @@ type BoardHookWithSetters = RealtimeBoardReturn & {
   __setCategories: (fn: (prev: Category[]) => Category[] | Category[]) => void;
   __setEpics: (fn: (prev: Epic[]) => Epic[] | Epic[]) => void;
   __setSubtasks: (fn: (prev: Record<string, Subtask[]>) => Record<string, Subtask[]>) => void;
+  __setTransitions: (fn: (prev: ColumnTransition[]) => ColumnTransition[] | ColumnTransition[]) => void;
 };
 
 type PostgresPayload<T> = {
@@ -25,12 +26,12 @@ type PostgresPayload<T> = {
 const REALTIME_MUTE_MS = 500;
 
 // Strip internal setters from the public API
-type PublicBoardAPI = Omit<RealtimeBoardReturn, '__setCards' | '__setColumns' | '__setCategories' | '__setEpics' | '__setSubtasks'>;
+type PublicBoardAPI = Omit<RealtimeBoardReturn, '__setCards' | '__setColumns' | '__setCategories' | '__setEpics' | '__setSubtasks' | '__setTransitions'>;
 
 export function useRealtimeBoard(): PublicBoardAPI {
   const boardHook = useBoard();
   const {
-    board, columns, categories, cards, epics, subtasks, loading, error,
+    board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, loading, error,
     __setCards, __setColumns, __setCategories, __setEpics, __setSubtasks,
     // Destructure all action methods so we can wrap them
     addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards,
@@ -38,6 +39,10 @@ export function useRealtimeBoard(): PublicBoardAPI {
     addColumn, editColumn, removeColumn, reorderColumns,
     addCategory, editCategory, removeCategory,
     loadSubtasks, addSubtask, toggleSubtask, removeSubtask, editSubtask,
+    addLabel, editLabel, removeLabel, toggleCardLabel,
+    addCardTemplate, removeCardTemplate,
+    addCardRelationship, removeCardRelationship,
+    addSavedFilter, removeSavedFilter,
     refresh,
   } = boardHook as BoardHookWithSetters;
 
@@ -339,7 +344,7 @@ export function useRealtimeBoard(): PublicBoardAPI {
 
   // ─── Return wrapped API ─────────────────────────────────
   return useMemo(() => ({
-    board, columns, categories, cards, epics, subtasks, loading, error,
+    board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, loading, error,
     addCard: mutedAddCard,
     editCard: mutedEditCard,
     removeCard: mutedRemoveCard,
@@ -358,19 +363,24 @@ export function useRealtimeBoard(): PublicBoardAPI {
     editCategory: mutedEditCategory,
     removeCategory: mutedRemoveCategory,
     loadSubtasks,
+    addLabel, editLabel, removeLabel, toggleCardLabel,
+    addCardTemplate, removeCardTemplate,
+    addCardRelationship, removeCardRelationship,
+    addSavedFilter,
+    removeSavedFilter,
     addSubtask: mutedAddSubtask,
     toggleSubtask: mutedToggleSubtask,
     removeSubtask: mutedRemoveSubtask,
     editSubtask: mutedEditSubtask,
     refresh,
   }), [
-    board, columns, categories, cards, epics, subtasks, loading, error,
+    board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, loading, error,
     mutedAddCard, mutedEditCard, mutedRemoveCard, mutedMoveCardToColumn,
     mutedArchiveCard, mutedUnarchiveCard, mutedArchiveEpicCards,
     mutedAddEpic, mutedEditEpic, mutedRemoveEpic,
     mutedAddColumn, mutedEditColumn, mutedRemoveColumn, mutedReorderColumns,
     mutedAddCategory, mutedEditCategory, mutedRemoveCategory,
-    loadSubtasks, mutedAddSubtask, mutedToggleSubtask, mutedRemoveSubtask, mutedEditSubtask,
+    loadSubtasks, addLabel, editLabel, removeLabel, toggleCardLabel, addCardTemplate, removeCardTemplate, addCardRelationship, removeCardRelationship, addSavedFilter, removeSavedFilter, mutedAddSubtask, mutedToggleSubtask, mutedRemoveSubtask, mutedEditSubtask,
     refresh,
   ]);
 }

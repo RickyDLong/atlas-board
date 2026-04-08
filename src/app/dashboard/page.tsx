@@ -26,6 +26,7 @@ import { CalendarView } from '@/components/board/CalendarView';
 import { StatsView } from '@/components/board/StatsView';
 import { ListView } from '@/components/board/ListView';
 import { ArchivePanel } from '@/components/board/ArchivePanel';
+import { SavedFilterBar } from '@/components/board/SavedFilterBar';
 import { AtlasLogo } from '@/components/AtlasLogo';
 
 type ViewMode = 'board' | 'calendar' | 'stats' | 'list';
@@ -46,12 +47,16 @@ export default function DashboardPage() {
 
 function DashboardContent() {
   const {
-    board, columns, categories, cards, epics, subtasks, loading, error,
+    board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, loading, error,
     addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards,
     addEpic, editEpic, removeEpic,
     addColumn, editColumn, removeColumn, reorderColumns,
     addCategory, editCategory, removeCategory,
     loadSubtasks, addSubtask, toggleSubtask, removeSubtask, editSubtask,
+    addLabel, editLabel, removeLabel, toggleCardLabel,
+    addCardTemplate, removeCardTemplate,
+    addCardRelationship, removeCardRelationship,
+    addSavedFilter, removeSavedFilter,
     refresh,
   } = useRealtimeBoard();
 
@@ -516,6 +521,26 @@ function DashboardContent() {
             Clear all
           </button>
         )}
+
+        <div className="ml-auto">
+          <SavedFilterBar
+            savedFilters={savedFilters}
+            currentFilter={{ categoryIds: filterCategories, priority: filterPriority, epicId: filterEpicId }}
+            onApplyFilter={(f) => {
+              setFilterCategories(f.categoryIds);
+              setFilterPriority(f.priority);
+              setFilterEpicId(f.epicId);
+            }}
+            onSaveFilter={async (name, f) => {
+              await addSavedFilter(name, {
+                categoryIds: f.categoryIds.length > 0 ? f.categoryIds : undefined,
+                priorities: f.priority ? [f.priority] : undefined,
+                epicIds: f.epicId ? [f.epicId] : undefined,
+              });
+            }}
+            onDeleteFilter={removeSavedFilter}
+          />
+        </div>
       </div>
 
       {/* Expanded filter options */}
@@ -586,6 +611,8 @@ function DashboardContent() {
               categories={categories}
               columns={columns}
               subtasks={subtasks}
+              labels={labels}
+              cardLabelsMap={cardLabels}
               onAddCard={(colId) => { setAddToColumnId(colId); setShowAddModal(true); }}
               onCardClick={(card) => setDetailCard(card)}
               onCardMenu={(card, x, y) => setContextMenu({ card, x, y })}
@@ -619,7 +646,7 @@ function DashboardContent() {
         </div>
       ) : (
         <div className="flex min-h-[calc(100vh-140px)] bg-[#0a0a0f]">
-          <StatsView cards={cards} categories={categories} columns={columns} epics={epics} />
+          <StatsView cards={cards} categories={categories} columns={columns} epics={epics} transitions={transitions} cfdSnapshots={cfdSnapshots} />
         </div>
       )}
 
@@ -669,6 +696,13 @@ function DashboardContent() {
             onToggleSubtask={editingCard ? (id) => toggleSubtask(editingCard.id, id) : undefined}
             onDeleteSubtask={editingCard ? (id) => removeSubtask(editingCard.id, id) : undefined}
             onEditSubtask={editingCard ? (id, title) => editSubtask(editingCard.id, id, title) : undefined}
+            labels={labels}
+            cardLabelIds={editingCard ? cardLabels.filter(cl => cl.card_id === editingCard.id).map(cl => cl.label_id) : []}
+            onToggleLabel={editingCard ? (labelId) => toggleCardLabel(editingCard.id, labelId) : undefined}
+            onCreateLabel={async (name, color) => addLabel(name, color)}
+            cardTemplates={cardTemplates}
+            onSaveTemplate={async (name, data) => addCardTemplate(name, data)}
+            onDeleteTemplate={async (id) => removeCardTemplate(id)}
             onSave={async (data) => {
               if (editingCard) {
                 await undoableEditCard(editingCard.id, data);
@@ -697,6 +731,11 @@ function DashboardContent() {
           onMove={async (colId) => { await undoableMoveCard(detailCard.id, colId); setDetailCard({ ...detailCard, column_id: colId }); }}
           onViewEpic={(epicId) => { setSelectedEpicId(epicId); setShowEpicPanel(true); setDetailCard(null); }}
           onArchive={doneCol && detailCard.column_id === doneCol.id ? async () => { await undoableArchiveCard(detailCard.id); setDetailCard(null); } : undefined}
+          allCards={cards}
+          cardRelationships={cardRelationships}
+          onAddRelationship={async (s, t, type) => addCardRelationship(s, t, type)}
+          onRemoveRelationship={async (id) => removeCardRelationship(id)}
+          onViewCard={(id) => { const c = cards.find(x => x.id === id); if (c) setDetailCard(c); }}
         />
       )}
 
@@ -714,6 +753,10 @@ function DashboardContent() {
           onEditColumn={editColumn}
           onRemoveColumn={removeColumn}
           onReorderColumns={reorderColumns}
+          labels={labels}
+          onAddLabel={async (name, color) => addLabel(name, color)}
+          onEditLabel={editLabel}
+          onRemoveLabel={removeLabel}
           onShowWelcome={() => setShowWelcome(true)}
           onClose={() => setShowSettings(false)}
         />

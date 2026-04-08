@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Board, Category, Column, UserPreferences } from '@/types/database';
+import type { Board, Category, Column, UserPreferences, Label } from '@/types/database';
 import { PRESET_COLORS } from '@/types/database';
 import { getUserPreferences, updateUserPreferences } from '@/lib/board-actions';
 
@@ -14,9 +14,13 @@ interface SettingsModalProps {
   onEditCategory: (id: string, updates: Partial<Pick<Category, 'label' | 'color' | 'position'>>) => Promise<void>;
   onRemoveCategory: (id: string) => Promise<void>;
   onAddColumn: (title: string, color: string) => Promise<void>;
-  onEditColumn: (id: string, updates: Partial<Pick<Column, 'title' | 'color' | 'position'>>) => Promise<void>;
+  onEditColumn: (id: string, updates: Partial<Pick<Column, 'title' | 'color' | 'position' | 'wip_limit'>>) => Promise<void>;
   onRemoveColumn: (id: string) => Promise<void>;
   onReorderColumns: (cols: Column[]) => Promise<void>;
+  labels?: Label[];
+  onAddLabel?: (name: string, color: string) => Promise<Label | undefined>;
+  onEditLabel?: (id: string, updates: Partial<Pick<Label, 'name' | 'color'>>) => Promise<void>;
+  onRemoveLabel?: (id: string) => Promise<void>;
   onShowWelcome?: () => void;
   onClose: () => void;
 }
@@ -26,10 +30,11 @@ export function SettingsModal({
   categories, columns,
   onAddCategory, onEditCategory, onRemoveCategory,
   onAddColumn, onEditColumn, onRemoveColumn, onReorderColumns,
+  labels = [], onAddLabel, onEditLabel, onRemoveLabel,
   onShowWelcome,
   onClose,
 }: SettingsModalProps) {
-  const [tab, setTab] = useState<'categories' | 'columns' | 'notifications'>('categories');
+  const [tab, setTab] = useState<'categories' | 'columns' | 'labels' | 'notifications'>('categories');
   const [prefs, setPrefs] = useState<UserPreferences | null>(null);
 
   useEffect(() => {
@@ -111,6 +116,10 @@ export function SettingsModal({
             className={`flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${tab === 'columns' ? 'text-[#4a9eff] border-[#4a9eff]' : 'text-[#555568] border-transparent hover:text-[#8888a0]'}`}
           >Columns</button>
           <button
+            onClick={() => setTab('labels')}
+            className={`flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${tab === 'labels' ? 'text-[#4a9eff] border-[#4a9eff]' : 'text-[#555568] border-transparent hover:text-[#8888a0]'}`}
+          >Labels</button>
+          <button
             onClick={() => setTab('notifications')}
             className={`flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${tab === 'notifications' ? 'text-[#4a9eff] border-[#4a9eff]' : 'text-[#555568] border-transparent hover:text-[#8888a0]'}`}
           >Notifications</button>
@@ -158,6 +167,15 @@ export function SettingsModal({
                     className="flex-1 bg-transparent border-none text-[#e8e8f0] text-[13px] outline-none"
                     placeholder="Column name..."
                   />
+                  <input
+                    type="number"
+                    min="1"
+                    value={col.wip_limit ?? ''}
+                    onChange={e => onEditColumn(col.id, { wip_limit: e.target.value ? parseInt(e.target.value) : null })}
+                    className="w-14 bg-[#0a0a0f] border border-[#2a2a3a] text-[#e8e8f0] text-[11px] text-center rounded px-1 py-1 outline-none focus:border-[#4a9eff] placeholder:text-[#555568]"
+                    placeholder="WIP"
+                    title="WIP limit (leave empty for no limit)"
+                  />
                   <button onClick={() => moveColumn(idx, -1)} className="text-[#555568] hover:text-white text-sm px-1 rounded transition-all cursor-pointer">&larr;</button>
                   <button onClick={() => moveColumn(idx, 1)} className="text-[#555568] hover:text-white text-sm px-1 rounded transition-all cursor-pointer">&rarr;</button>
                   <button onClick={() => onRemoveColumn(col.id)} className="text-[#555568] hover:text-[#f87171] text-sm px-1 rounded transition-all cursor-pointer">&times;</button>
@@ -166,6 +184,32 @@ export function SettingsModal({
               <button onClick={() => onAddColumn('New Column', PRESET_COLORS[(columns.length + 4) % PRESET_COLORS.length])}
                 className="w-full py-2.5 border border-dashed border-[#2a2a3a] rounded-lg text-[#555568] text-xs hover:border-[#4a9eff] hover:text-[#4a9eff] transition-all cursor-pointer">
                 + Add Column
+              </button>
+            </>
+          )}
+
+          {tab === 'labels' && onAddLabel && onEditLabel && onRemoveLabel && (
+            <>
+              {labels.map(lbl => (
+                <div key={lbl.id} className="flex items-center gap-2.5 px-3 py-2.5 bg-[#1a1a26] border border-[#1e1e2e] rounded-lg">
+                  <div className="w-7 h-7 rounded-md flex-shrink-0 relative overflow-hidden cursor-pointer" style={{ background: lbl.color }}>
+                    <input type="color" value={lbl.color}
+                      onChange={e => onEditLabel(lbl.id, { color: e.target.value })}
+                      className="absolute inset-[-4px] w-[calc(100%+8px)] h-[calc(100%+8px)] border-none cursor-pointer opacity-0" />
+                  </div>
+                  <input
+                    value={lbl.name}
+                    onChange={e => onEditLabel(lbl.id, { name: e.target.value })}
+                    className="flex-1 bg-transparent border-none text-[#e8e8f0] text-[13px] outline-none"
+                    placeholder="Label name..."
+                  />
+                  <button onClick={() => onRemoveLabel(lbl.id)}
+                    className="text-[#555568] hover:text-[#f87171] text-sm px-1 rounded transition-all cursor-pointer">&times;</button>
+                </div>
+              ))}
+              <button onClick={() => onAddLabel('New Label', PRESET_COLORS[labels.length % PRESET_COLORS.length])}
+                className="w-full py-2.5 border border-dashed border-[#2a2a3a] rounded-lg text-[#555568] text-xs hover:border-[#4a9eff] hover:text-[#4a9eff] transition-all cursor-pointer">
+                + Add Label
               </button>
             </>
           )}

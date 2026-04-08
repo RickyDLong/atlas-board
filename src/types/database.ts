@@ -13,6 +13,7 @@ export interface Column {
   color: string;
   position: number;
   is_done: boolean;
+  wip_limit: number | null;
   created_at: string;
 }
 
@@ -50,9 +51,13 @@ export interface Card {
   effort: 'XS' | 'S' | 'M' | 'L' | 'XL' | null;
   notes: string | null;
   due_date: string | null;
+  estimated_hours: number | null;
+  actual_hours: number | null;
   archived_at: string | null;
   position: number;
   column_changed_at: string | null;
+  recurrence_rule: RecurrenceRule | null;
+  recurrence_source_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -64,6 +69,125 @@ export interface Subtask {
   completed: boolean;
   position: number;
   created_at: string;
+}
+
+export interface CardTemplate {
+  id: string;
+  board_id: string;
+  name: string;
+  template_data: {
+    title?: string;
+    description?: string;
+    category_id?: string;
+    priority?: string;
+    effort?: string;
+    epic_id?: string;
+    notes?: string;
+  };
+  position: number;
+  created_at: string;
+}
+
+export interface Label {
+  id: string;
+  board_id: string;
+  name: string;
+  color: string;
+  created_at: string;
+}
+
+export interface CardLabel {
+  card_id: string;
+  label_id: string;
+}
+
+export interface SavedFilter {
+  id: string;
+  board_id: string;
+  name: string;
+  filters: {
+    columnIds?: string[];
+    categoryIds?: string[];
+    priorities?: string[];
+    epicIds?: string[];
+    searchText?: string;
+    dueDateRange?: { from?: string; to?: string };
+  };
+  position: number;
+  created_at: string;
+}
+
+export interface CfdSnapshot {
+  id: string;
+  board_id: string;
+  snapshot_date: string;
+  column_counts: Record<string, number>;
+  created_at: string;
+}
+
+export type ActivityAction = 'card_created' | 'card_updated' | 'card_moved' | 'card_archived' | 'card_deleted' | 'card_unarchived';
+
+export interface ActivityLogEntry {
+  id: string;
+  board_id: string;
+  card_id: string | null;
+  user_id: string;
+  action: ActivityAction;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
+export type RecurrenceRule = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
+
+export const RECURRENCE_OPTIONS: { id: RecurrenceRule; label: string }[] = [
+  { id: 'daily', label: 'Daily' },
+  { id: 'weekly', label: 'Weekly' },
+  { id: 'biweekly', label: 'Biweekly' },
+  { id: 'monthly', label: 'Monthly' },
+  { id: 'quarterly', label: 'Quarterly' },
+];
+
+export type RelationshipType = 'blocks' | 'related_to' | 'duplicates';
+
+export interface CardRelationship {
+  id: string;
+  board_id: string;
+  source_card_id: string;
+  target_card_id: string;
+  relationship_type: RelationshipType;
+  created_at: string;
+}
+
+export interface CardAttachment {
+  id: string;
+  card_id: string;
+  board_id: string;
+  user_id: string;
+  file_name: string;
+  file_size: number;
+  content_type: string;
+  storage_path: string;
+  created_at: string;
+}
+
+export interface CardComment {
+  id: string;
+  card_id: string;
+  board_id: string;
+  user_id: string;
+  parent_id: string | null;
+  body: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ColumnTransition {
+  id: string;
+  card_id: string;
+  board_id: string;
+  from_column_id: string | null;
+  to_column_id: string;
+  transitioned_at: string;
 }
 
 export interface Profile {
@@ -106,11 +230,11 @@ export const EPIC_STATUSES: { id: EpicStatus; label: string; color: string }[] =
 export const EFFORTS: Effort[] = ['XS', 'S', 'M', 'L', 'XL'];
 
 export const DEFAULT_COLUMNS = [
-  { title: 'Quest Log', color: '#555568', is_done: false },
-  { title: 'Preparing', color: '#fbbf24', is_done: false },
-  { title: 'In Battle', color: '#4a9eff', is_done: false },
-  { title: 'Loot Check', color: '#a855f7', is_done: false },
-  { title: 'Conquered', color: '#34d399', is_done: true },
+  { title: 'Quest Log', color: '#555568', is_done: false, wip_limit: null },
+  { title: 'Preparing', color: '#fbbf24', is_done: false, wip_limit: null },
+  { title: 'In Battle', color: '#4a9eff', is_done: false, wip_limit: null },
+  { title: 'Loot Check', color: '#a855f7', is_done: false, wip_limit: null },
+  { title: 'Conquered', color: '#34d399', is_done: true, wip_limit: null },
 ];
 
 export const DEFAULT_CATEGORIES = [

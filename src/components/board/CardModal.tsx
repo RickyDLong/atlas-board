@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import type { Card, Category, Column, Epic, Subtask } from '@/types/database';
-import { PRIORITIES, EFFORTS } from '@/types/database';
+import type { Card, Category, Column, Epic, Subtask, Label, CardTemplate, RecurrenceRule } from '@/types/database';
+import { PRIORITIES, EFFORTS, RECURRENCE_OPTIONS } from '@/types/database';
+import { LabelPicker } from './LabelPicker';
+import { TemplatePicker } from './TemplatePicker';
 
 interface CardModalProps {
   card: Card | null;
@@ -18,6 +20,13 @@ interface CardModalProps {
   onToggleSubtask?: (subtaskId: string) => Promise<void>;
   onDeleteSubtask?: (subtaskId: string) => Promise<void>;
   onEditSubtask?: (subtaskId: string, title: string) => Promise<void>;
+  labels?: Label[];
+  cardLabelIds?: string[];
+  onToggleLabel?: (labelId: string) => void;
+  onCreateLabel?: (name: string, color: string) => Promise<Label | undefined>;
+  cardTemplates?: CardTemplate[];
+  onSaveTemplate?: (name: string, templateData: CardTemplate['template_data']) => Promise<CardTemplate | undefined>;
+  onDeleteTemplate?: (id: string) => Promise<void>;
   onSave: (data: Partial<Card>) => Promise<void>;
   onClose: () => void;
 }
@@ -25,6 +34,8 @@ interface CardModalProps {
 export function CardModal({
   card, boardId, defaultColumnId, categories, columns, epics, nextPosition, defaultDueDate,
   subtasks = [], onAddSubtask, onToggleSubtask, onDeleteSubtask, onEditSubtask,
+  labels = [], cardLabelIds = [], onToggleLabel, onCreateLabel,
+  cardTemplates = [], onSaveTemplate, onDeleteTemplate,
   onSave, onClose
 }: CardModalProps) {
   const [title, setTitle] = useState(card?.title || '');
@@ -36,6 +47,9 @@ export function CardModal({
   const [epicId, setEpicId] = useState(card?.epic_id || '');
   const [notes, setNotes] = useState(card?.notes || '');
   const [dueDate, setDueDate] = useState(card?.due_date || defaultDueDate || '');
+  const [estimatedHours, setEstimatedHours] = useState(card?.estimated_hours?.toString() || '');
+  const [actualHours, setActualHours] = useState(card?.actual_hours?.toString() || '');
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | ''>(card?.recurrence_rule || '');
   const [saving, setSaving] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
@@ -56,6 +70,9 @@ export function CardModal({
       epic_id: epicId || null,
       notes: notes.trim() || null,
       due_date: dueDate || null,
+      estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
+      actual_hours: actualHours ? parseFloat(actualHours) : null,
+      recurrence_rule: recurrenceRule || null,
       position: card ? card.position : nextPosition,
     });
     setSaving(false);
@@ -84,6 +101,32 @@ export function CardModal({
         </div>
         <form onSubmit={handleSubmit}>
           <div className="p-5 space-y-3.5">
+            {/* Template picker — only for new cards */}
+            {!card && onSaveTemplate && onDeleteTemplate && (
+              <TemplatePicker
+                templates={cardTemplates}
+                onApply={(data) => {
+                  if (data.title) setTitle(data.title);
+                  if (data.description) setDescription(data.description);
+                  if (data.category_id) setCategoryId(data.category_id);
+                  if (data.priority) setPriority(data.priority as Card['priority']);
+                  if (data.effort) setEffort(data.effort as NonNullable<Card['effort']>);
+                  if (data.epic_id) setEpicId(data.epic_id);
+                  if (data.notes) setNotes(data.notes);
+                }}
+                onSave={onSaveTemplate}
+                onDelete={onDeleteTemplate}
+                currentFormData={{
+                  title: title || undefined,
+                  description: description || undefined,
+                  category_id: categoryId || undefined,
+                  priority: priority || undefined,
+                  effort: effort || undefined,
+                  epic_id: epicId || undefined,
+                  notes: notes || undefined,
+                }}
+              />
+            )}
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Title</label>
               <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Name your quest..."
@@ -135,10 +178,42 @@ export function CardModal({
                 {epics.filter(e => e.status !== 'archived').map(e => <option key={e.id} value={e.id}>&#9670; {e.name}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Due Date</label>
-              <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] cursor-pointer" />
+            {onToggleLabel && onCreateLabel && (
+              <LabelPicker
+                labels={labels}
+                selectedLabelIds={cardLabelIds}
+                onToggle={onToggleLabel}
+                onCreateLabel={onCreateLabel}
+              />
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Due Date</label>
+                <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] cursor-pointer" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Repeat</label>
+                <select value={recurrenceRule} onChange={e => setRecurrenceRule(e.target.value as RecurrenceRule | '')}
+                  className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] cursor-pointer">
+                  <option value="">None</option>
+                  {RECURRENCE_OPTIONS.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Est. Hours</label>
+                <input type="number" step="0.25" min="0" value={estimatedHours} onChange={e => setEstimatedHours(e.target.value)}
+                  placeholder="0"
+                  className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] placeholder:text-[#555568]" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Actual Hours</label>
+                <input type="number" step="0.25" min="0" value={actualHours} onChange={e => setActualHours(e.target.value)}
+                  placeholder="0"
+                  className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] placeholder:text-[#555568]" />
+              </div>
             </div>
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Notes</label>
