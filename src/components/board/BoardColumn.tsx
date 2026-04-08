@@ -1,6 +1,6 @@
 'use client';
 
-import type { Column, Card, Category } from '@/types/database';
+import type { Column, Card, Category, Subtask } from '@/types/database';
 import { PRIORITIES } from '@/types/database';
 import { BoardCard } from './BoardCard';
 
@@ -9,6 +9,7 @@ interface BoardColumnProps {
   cards: Card[];
   categories: Category[];
   columns: Column[];
+  subtasks?: Record<string, Subtask[]>;
   onAddCard: (columnId: string) => void;
   onCardClick: (card: Card) => void;
   onCardMenu: (card: Card, x: number, y: number) => void;
@@ -16,7 +17,7 @@ interface BoardColumnProps {
 }
 
 export function BoardColumn({
-  column, cards, categories, columns, onAddCard, onCardClick, onCardMenu, onDrop,
+  column, cards, categories, columns, subtasks = {}, onAddCard, onCardClick, onCardMenu, onDrop,
 }: BoardColumnProps) {
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -65,12 +66,18 @@ export function BoardColumn({
           const pri = PRIORITIES.find((p) => p.id === card.priority);
           const sorted = [...columns].sort((a, b) => a.position - b.position);
           const isDone = sorted.length > 0 && column.id === sorted[sorted.length - 1].id;
+          const cardSubtasks = subtasks[card.id] || [];
+          const subtaskProgress = cardSubtasks.length > 0 ? {
+            done: cardSubtasks.filter(s => s.completed).length,
+            total: cardSubtasks.length,
+          } : null;
           return (
             <BoardCard
               key={card.id}
               card={card}
               category={cat}
               priority={pri}
+              subtaskProgress={subtaskProgress}
               isDoneColumn={isDone}
               onClick={() => onCardClick(card)}
               onMenu={(x, y) => onCardMenu(card, x, y)}

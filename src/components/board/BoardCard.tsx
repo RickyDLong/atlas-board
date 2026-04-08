@@ -7,6 +7,7 @@ interface BoardCardProps {
   card: Card;
   category?: Category;
   priority?: { id: string; label: string; color: string };
+  subtaskProgress?: { done: number; total: number } | null;
   isDoneColumn?: boolean;
   onClick: () => void;
   onMenu: (x: number, y: number) => void;
@@ -29,7 +30,7 @@ export function getShieldAging(card: Card, isDoneColumn: boolean): { count: numb
   return { count: 4, color: '#f87171', label: `${days} days in column` };
 }
 
-export function BoardCard({ card, category, priority, isDoneColumn = false, onClick, onMenu }: BoardCardProps) {
+export function BoardCard({ card, category, priority, subtaskProgress = null, isDoneColumn = false, onClick, onMenu }: BoardCardProps) {
   const [dragging, setDragging] = useState(false);
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -100,6 +101,14 @@ export function BoardCard({ card, category, priority, isDoneColumn = false, onCl
           {card.effort && (
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded uppercase font-mono text-[#555568] bg-[#1a1a26]">
               {card.effort}
+            </span>
+          )}
+          {subtaskProgress && subtaskProgress.total > 0 && (
+            <span
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded font-mono"
+              style={{ color: subtaskProgress.done === subtaskProgress.total ? '#34d399' : '#555568', background: '#1a1a26' }}
+            >
+              {subtaskProgress.done}/{subtaskProgress.total} ✓
             </span>
           )}
           {card.due_date && (() => {

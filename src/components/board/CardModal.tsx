@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Card, Category, Column, Epic } from '@/types/database';
+import type { Card, Category, Column, Epic, Subtask } from '@/types/database';
 import { PRIORITIES, EFFORTS } from '@/types/database';
 
 interface CardModalProps {
@@ -13,11 +13,20 @@ interface CardModalProps {
   epics: Epic[];
   nextPosition: number;
   defaultDueDate?: string | null;
+  subtasks?: Subtask[];
+  onAddSubtask?: (title: string) => Promise<Subtask | void>;
+  onToggleSubtask?: (subtaskId: string) => Promise<void>;
+  onDeleteSubtask?: (subtaskId: string) => Promise<void>;
+  onEditSubtask?: (subtaskId: string, title: string) => Promise<void>;
   onSave: (data: Partial<Card>) => Promise<void>;
   onClose: () => void;
 }
 
-export function CardModal({ card, boardId, defaultColumnId, categories, columns, epics, nextPosition, defaultDueDate, onSave, onClose }: CardModalProps) {
+export function CardModal({
+  card, boardId, defaultColumnId, categories, columns, epics, nextPosition, defaultDueDate,
+  subtasks = [], onAddSubtask, onToggleSubtask, onDeleteSubtask, onEditSubtask,
+  onSave, onClose
+}: CardModalProps) {
   const [title, setTitle] = useState(card?.title || '');
   const [description, setDescription] = useState(card?.description || '');
   const [categoryId, setCategoryId] = useState(card?.category_id || categories[0]?.id || '');
@@ -28,6 +37,9 @@ export function CardModal({ card, boardId, defaultColumnId, categories, columns,
   const [notes, setNotes] = useState(card?.notes || '');
   const [dueDate, setDueDate] = useState(card?.due_date || defaultDueDate || '');
   const [saving, setSaving] = useState(false);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
+  const [editingSubtaskTitle, setEditingSubtaskTitle] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +59,20 @@ export function CardModal({ card, boardId, defaultColumnId, categories, columns,
       position: card ? card.position : nextPosition,
     });
     setSaving(false);
+  };
+
+  const handleAddSubtask = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter' || !newSubtaskTitle.trim() || !onAddSubtask) return;
+    e.preventDefault();
+    await onAddSubtask(newSubtaskTitle.trim());
+    setNewSubtaskTitle('');
+  };
+
+  const handleEditSubtask = async (subtaskId: string) => {
+    if (!editingSubtaskTitle.trim() || !onEditSubtask) return;
+    await onEditSubtask(subtaskId, editingSubtaskTitle.trim());
+    setEditingSubtaskId(null);
+    setEditingSubtaskTitle('');
   };
 
   return (
@@ -119,6 +145,83 @@ export function CardModal({ card, boardId, defaultColumnId, categories, columns,
               <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Links, context, next steps..." rows={3}
                 className="w-full px-3 py-2 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] transition-colors resize-y min-h-[60px]" />
             </div>
+
+            {/* Checklist section — only show when editing an existing card */}
+            {card && onAddSubtask && (
+              <div className="border-t border-[#1e1e2e] pt-3.5">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#555568]">
+                    Checklist
+                  </label>
+                  {subtasks.length > 0 && (
+                    <span className="text-[11px] text-[#34d399] font-medium">
+                      {subtasks.filter(s => s.completed).length}/{subtasks.length}
+                    </span>
+                  )}
+                </div>
+
+                {/* Subtask list */}
+                {subtasks.length > 0 && (
+                  <div className="space-y-1.5 mb-2">
+                    {subtasks.map(subtask => (
+                      <div key={subtask.id} className="flex items-center gap-2 group">
+                        <input
+                          type="checkbox"
+                          checked={subtask.completed}
+                          onChange={() => onToggleSubtask?.(subtask.id)}
+                          className="w-4 h-4 rounded border border-[#2a2a3a] bg-[#1a1a26] accent-[#4a9eff] cursor-pointer flex-shrink-0"
+                        />
+                        {editingSubtaskId === subtask.id ? (
+                          <input
+                            type="text"
+                            value={editingSubtaskTitle}
+                            onChange={e => setEditingSubtaskTitle(e.target.value)}
+                            onBlur={() => handleEditSubtask(subtask.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleEditSubtask(subtask.id);
+                              if (e.key === 'Escape') setEditingSubtaskId(null);
+                            }}
+                            autoFocus
+                            className="flex-1 px-2 py-0.5 bg-[#1a1a26] border border-[#4a9eff] rounded text-[13px] text-[#e8e8f0] outline-none"
+                          />
+                        ) : (
+                          <span
+                            onClick={() => {
+                              setEditingSubtaskId(subtask.id);
+                              setEditingSubtaskTitle(subtask.title);
+                            }}
+                            className={`flex-1 text-[13px] cursor-pointer px-2 py-0.5 rounded transition-colors ${
+                              subtask.completed
+                                ? 'text-[#555568] line-through'
+                                : 'text-[#e8e8f0] hover:bg-[#1a1a26]'
+                            }`}
+                          >
+                            {subtask.title}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => onDeleteSubtask?.(subtask.id)}
+                          className="opacity-0 group-hover:opacity-100 text-[#555568] hover:text-[#f87171] text-sm px-1 py-0.5 rounded hover:bg-[#1a1a26] transition-opacity cursor-pointer flex-shrink-0"
+                        >
+                          &#10005;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add subtask input */}
+                <input
+                  type="text"
+                  value={newSubtaskTitle}
+                  onChange={e => setNewSubtaskTitle(e.target.value)}
+                  onKeyDown={handleAddSubtask}
+                  placeholder="Add item..."
+                  className="w-full px-3 py-1.5 bg-[#1a1a26] border border-[#2a2a3a] rounded-lg text-[#e8e8f0] text-sm outline-none focus:border-[#4a9eff] transition-colors placeholder-[#555568]"
+                />
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2 px-5 py-3 border-t border-[#1e1e2e]">
             <button type="button" onClick={onClose} className="text-xs text-[#8888a0] border border-[#2a2a3a] px-4 py-2 rounded-md hover:bg-[#1a1a26] transition-all cursor-pointer">Cancel</button>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Board, Column, Category, Card, Epic } from '@/types/database';
+import type { Board, Column, Category, Card, Epic, Subtask } from '@/types/database';
 import * as actions from '@/lib/board-actions';
 
 export function useBoard() {
@@ -10,6 +10,7 @@ export function useBoard() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [epics, setEpics] = useState<Epic[]>([]);
+  const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -151,12 +152,58 @@ export function useBoard() {
     setCategories(prev => prev.filter(c => c.id !== id));
   }, []);
 
+  // ─── Subtask actions ─────────────────────────────────────
+
+  const loadSubtasks = useCallback(async (cardId: string) => {
+    const subs = await actions.getSubtasks(cardId);
+    setSubtasks(prev => ({ ...prev, [cardId]: subs }));
+  }, []);
+
+  const addSubtask = useCallback(async (cardId: string, title: string) => {
+    const existingSubs = subtasks[cardId] || [];
+    const position = existingSubs.length;
+    const newSubtask = await actions.createSubtask(cardId, title, position);
+    setSubtasks(prev => ({
+      ...prev,
+      [cardId]: [...(prev[cardId] || []), newSubtask],
+    }));
+    return newSubtask;
+  }, [subtasks]);
+
+  const toggleSubtask = useCallback(async (cardId: string, subtaskId: string) => {
+    const current = subtasks[cardId]?.find(s => s.id === subtaskId);
+    if (!current) return;
+    const newCompleted = !current.completed;
+    await actions.updateSubtask(subtaskId, { completed: newCompleted });
+    setSubtasks(prev => ({
+      ...prev,
+      [cardId]: (prev[cardId] || []).map(s => s.id === subtaskId ? { ...s, completed: newCompleted } : s),
+    }));
+  }, [subtasks]);
+
+  const removeSubtask = useCallback(async (cardId: string, subtaskId: string) => {
+    await actions.deleteSubtask(subtaskId);
+    setSubtasks(prev => ({
+      ...prev,
+      [cardId]: (prev[cardId] || []).filter(s => s.id !== subtaskId),
+    }));
+  }, []);
+
+  const editSubtask = useCallback(async (cardId: string, subtaskId: string, title: string) => {
+    await actions.updateSubtask(subtaskId, { title });
+    setSubtasks(prev => ({
+      ...prev,
+      [cardId]: (prev[cardId] || []).map(s => s.id === subtaskId ? { ...s, title } : s),
+    }));
+  }, []);
+
   return {
-    board, columns, categories, cards, epics, loading, error,
+    board, columns, categories, cards, epics, subtasks, loading, error,
     addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards,
     addEpic, editEpic, removeEpic,
     addColumn, editColumn, removeColumn, reorderColumns,
     addCategory, editCategory, removeCategory,
+    loadSubtasks, addSubtask, toggleSubtask, removeSubtask, editSubtask,
     refresh: loadBoard,
   };
 }

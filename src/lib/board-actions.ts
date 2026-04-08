@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import type { Board, Column, Category, Card, Epic } from '@/types/database';
+import type { Board, Column, Category, Card, Epic, Subtask } from '@/types/database';
 import { DEFAULT_COLUMNS, DEFAULT_CATEGORIES } from '@/types/database';
 
 const supabase = createClient();
@@ -180,4 +180,48 @@ export async function signOut(): Promise<void> {
 export async function getCurrentUser() {
   const { data: { user } } = await supabase.auth.getUser();
   return user;
+}
+
+// ─── Subtasks ────────────────────────────────────────────────
+
+export async function getSubtasks(cardId: string): Promise<Subtask[]> {
+  const { data, error } = await supabase
+    .from('subtasks')
+    .select('*')
+    .eq('card_id', cardId)
+    .order('position');
+  if (error) throw error;
+  return data as Subtask[];
+}
+
+export async function createSubtask(cardId: string, title: string, position: number): Promise<Subtask> {
+  const { data, error } = await supabase
+    .from('subtasks')
+    .insert({ card_id: cardId, title, position })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Subtask;
+}
+
+export async function updateSubtask(id: string, updates: Partial<Pick<Subtask, 'title' | 'completed' | 'position'>>): Promise<Subtask> {
+  const { data, error } = await supabase
+    .from('subtasks')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Subtask;
+}
+
+export async function deleteSubtask(id: string): Promise<void> {
+  const { error } = await supabase.from('subtasks').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function reorderSubtasks(subtasks: { id: string; position: number }[]): Promise<void> {
+  for (const sub of subtasks) {
+    await supabase.from('subtasks').update({ position: sub.position }).eq('id', sub.id);
+  }
 }

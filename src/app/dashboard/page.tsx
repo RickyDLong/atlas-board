@@ -27,11 +27,12 @@ type ViewMode = 'board' | 'calendar' | 'stats' | 'list';
 
 export default function DashboardPage() {
   const {
-    board, columns, categories, cards, epics, loading, error,
+    board, columns, categories, cards, epics, subtasks, loading, error,
     addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards,
     addEpic, editEpic, removeEpic,
     addColumn, editColumn, removeColumn, reorderColumns,
     addCategory, editCategory, removeCategory,
+    loadSubtasks, addSubtask, toggleSubtask, removeSubtask, editSubtask,
     refresh,
   } = useBoard();
 
@@ -391,6 +392,7 @@ export default function DashboardPage() {
               cards={getColumnCards(col.id)}
               categories={categories}
               columns={columns}
+              subtasks={subtasks}
               onAddCard={(colId) => { setAddToColumnId(colId); setShowAddModal(true); }}
               onCardClick={(card) => setDetailCard(card)}
               onCardMenu={(card, x, y) => setContextMenu({ card, x, y })}
@@ -458,29 +460,40 @@ export default function DashboardPage() {
       )}
 
       {/* Card create/edit modal */}
-      {(showAddModal || editingCard) && board && (
-        <CardModal
-          card={editingCard}
-          boardId={board.id}
-          defaultColumnId={addToColumnId || columns[0]?.id}
-          categories={categories}
-          columns={columns}
-          epics={epics}
-          nextPosition={cards.filter(c => c.column_id === (addToColumnId || columns[0]?.id)).length}
-          defaultDueDate={!editingCard ? calendarDate : null}
-          onSave={async (data) => {
-            if (editingCard) {
-              await editCard(editingCard.id, data);
-              setEditingCard(null);
-            } else {
-              await gamifiedAddCard(data as Card);
-              setShowAddModal(false);
-            }
-            setCalendarDate(null);
-          }}
-          onClose={() => { setShowAddModal(false); setEditingCard(null); setCalendarDate(null); }}
-        />
-      )}
+      {(showAddModal || editingCard) && board && (() => {
+        // Load subtasks for the card being edited
+        if (editingCard && !subtasks[editingCard.id]) {
+          loadSubtasks(editingCard.id);
+        }
+        return (
+          <CardModal
+            card={editingCard}
+            boardId={board.id}
+            defaultColumnId={addToColumnId || columns[0]?.id}
+            categories={categories}
+            columns={columns}
+            epics={epics}
+            nextPosition={cards.filter(c => c.column_id === (addToColumnId || columns[0]?.id)).length}
+            defaultDueDate={!editingCard ? calendarDate : null}
+            subtasks={editingCard ? (subtasks[editingCard.id] || []) : []}
+            onAddSubtask={editingCard ? (title) => addSubtask(editingCard.id, title) : undefined}
+            onToggleSubtask={editingCard ? (id) => toggleSubtask(editingCard.id, id) : undefined}
+            onDeleteSubtask={editingCard ? (id) => removeSubtask(editingCard.id, id) : undefined}
+            onEditSubtask={editingCard ? (id, title) => editSubtask(editingCard.id, id, title) : undefined}
+            onSave={async (data) => {
+              if (editingCard) {
+                await editCard(editingCard.id, data);
+                setEditingCard(null);
+              } else {
+                await gamifiedAddCard(data as Card);
+                setShowAddModal(false);
+              }
+              setCalendarDate(null);
+            }}
+            onClose={() => { setShowAddModal(false); setEditingCard(null); setCalendarDate(null); }}
+          />
+        );
+      })()}
 
       {/* Card detail modal */}
       {detailCard && !editingCard && (
