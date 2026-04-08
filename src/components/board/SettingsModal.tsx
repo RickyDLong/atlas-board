@@ -17,6 +17,7 @@ interface SettingsModalProps {
   onEditColumn: (id: string, updates: Partial<Pick<Column, 'title' | 'color' | 'position'>>) => Promise<void>;
   onRemoveColumn: (id: string) => Promise<void>;
   onReorderColumns: (cols: Column[]) => Promise<void>;
+  onShowWelcome?: () => void;
   onClose: () => void;
 }
 
@@ -25,6 +26,7 @@ export function SettingsModal({
   categories, columns,
   onAddCategory, onEditCategory, onRemoveCategory,
   onAddColumn, onEditColumn, onRemoveColumn, onReorderColumns,
+  onShowWelcome,
   onClose,
 }: SettingsModalProps) {
   const [tab, setTab] = useState<'categories' | 'columns' | 'notifications'>('categories');
@@ -199,6 +201,16 @@ export function SettingsModal({
                       Notifications are sent daily at your preferred time if you have overdue cards on your board.
                     </p>
                   </div>
+
+                  <button
+                    onClick={() => {
+                      onShowWelcome?.();
+                      onClose();
+                    }}
+                    className="w-full px-3 py-2.5 bg-[#1a1a26] border border-[#2a2a3a] text-[#8888a0] text-xs font-medium rounded-lg hover:bg-[#22222f] hover:text-[#4a9eff] transition-all cursor-pointer"
+                  >
+                    Show Welcome Guide
+                  </button>
                 </>
               ) : (
                 <div className="text-[#555568] text-xs py-4 text-center">Unable to load preferences</div>

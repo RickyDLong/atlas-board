@@ -12,9 +12,10 @@ import { XPToastStack } from '@/components/board/XPToast';
 import { LevelUpCelebration } from '@/components/board/LevelUpCelebration';
 import { BadgePanel } from '@/components/board/BadgePanel';
 import { UndoToast } from '@/components/board/UndoToast';
+import { WelcomeModal } from '@/components/board/WelcomeModal';
 import { PRIORITIES } from '@/types/database';
 import type { Card } from '@/types/database';
-import { signOut, getCurrentUser } from '@/lib/board-actions';
+import { signOut, getCurrentUser, getUserPreferences, updateUserPreferences } from '@/lib/board-actions';
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -40,12 +41,31 @@ export default function DashboardPage() {
 
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
   const undoRedo = useUndoRedo();
   const [activeUndoToast, setActiveUndoToast] = useState<{ description: string; actionId: string } | null>(null);
 
   useEffect(() => {
     getCurrentUser().then(u => setUserId(u?.id || null));
   }, []);
+
+  // Check if user has seen onboarding
+  useEffect(() => {
+    if (!userId || loading) return;
+
+    const checkOnboarding = async () => {
+      try {
+        const prefs = await getUserPreferences(userId);
+        if (!prefs.has_seen_onboarding) {
+          setShowWelcome(true);
+        }
+      } catch (err) {
+        console.error('Failed to check onboarding status:', err);
+      }
+    };
+
+    checkOnboarding();
+  }, [userId, loading]);
 
   const gam = useGamification(userId, board?.id || null);
   const [showBadgePanel, setShowBadgePanel] = useState(false);
@@ -657,12 +677,29 @@ export default function DashboardPage() {
           onEditColumn={editColumn}
           onRemoveColumn={removeColumn}
           onReorderColumns={reorderColumns}
+          onShowWelcome={() => setShowWelcome(true)}
           onClose={() => setShowSettings(false)}
         />
       )}
 
       {/* Shortcuts help */}
       {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
+
+      {/* Welcome/Onboarding modal */}
+      {showWelcome && (
+        <WelcomeModal
+          onComplete={async () => {
+            if (userId) {
+              try {
+                await updateUserPreferences(userId, { has_seen_onboarding: true });
+              } catch (err) {
+                console.error('Failed to update onboarding flag:', err);
+              }
+            }
+            setShowWelcome(false);
+          }}
+        />
+      )}
 
       {/* Archive panel */}
       {showArchive && board && (

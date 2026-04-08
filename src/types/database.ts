@@ -78,6 +78,7 @@ export interface UserPreferences {
   overdue_notifications: boolean;
   notification_email: string | null;
   notification_time: string;
+  has_seen_onboarding: boolean;
   created_at: string;
   updated_at: string;
 }
