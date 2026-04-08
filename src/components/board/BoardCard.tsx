@@ -40,7 +40,7 @@ export function BoardCard({ card, category, priority, subtaskProgress = null, is
     e.dataTransfer.setData('text/plain', card.id);
   };
 
-  const aging = showShields ? getShieldAging(card, isDoneColumn) : null;
+  const aging = getShieldAging(card, isDoneColumn);
 
   return (
     <div
@@ -133,21 +133,30 @@ export function BoardCard({ card, category, priority, subtaskProgress = null, is
           })()}
         </div>
 
-        {/* Shield aging indicator */}
+        {/* Aging indicator — shields (RPG) or dots (clean) */}
         {aging && (
           <div className="flex items-center gap-0.5" title={aging.label} data-testid="shield-aging">
-            {Array.from({ length: aging.count }).map((_, i) => (
-              <svg
-                key={i}
-                width="11"
-                height="13"
-                viewBox="0 0 24 28"
-                fill={aging.color}
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M12 0L0 5v8c0 8.4 5.1 13.2 12 15 6.9-1.8 12-6.6 12-15V5L12 0z" />
-              </svg>
-            ))}
+            {showShields
+              ? Array.from({ length: aging.count }).map((_, i) => (
+                  <svg
+                    key={i}
+                    width="11"
+                    height="13"
+                    viewBox="0 0 24 28"
+                    fill={aging.color}
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M12 0L0 5v8c0 8.4 5.1 13.2 12 15 6.9-1.8 12-6.6 12-15V5L12 0z" />
+                  </svg>
+                ))
+              : Array.from({ length: aging.count }).map((_, i) => (
+                  <span
+                    key={i}
+                    className="inline-block w-[7px] h-[7px] rounded-full"
+                    style={{ backgroundColor: aging.color }}
+                  />
+                ))
+            }
           </div>
         )}
       </div>
