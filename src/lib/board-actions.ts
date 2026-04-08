@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import type { Board, Column, Category, Card, Epic, Subtask } from '@/types/database';
+import type { Board, Column, Category, Card, Epic, Subtask, UserPreferences } from '@/types/database';
 import { DEFAULT_COLUMNS, DEFAULT_CATEGORIES } from '@/types/database';
 
 const supabase = createClient();
@@ -224,4 +224,49 @@ export async function reorderSubtasks(subtasks: { id: string; position: number }
   for (const sub of subtasks) {
     await supabase.from('subtasks').update({ position: sub.position }).eq('id', sub.id);
   }
+}
+
+// ─── User Preferences ────────────────────────────────────────
+
+export async function getUserPreferences(userId: string): Promise<UserPreferences> {
+  const { data, error } = await supabase
+    .from('user_preferences')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (error && error.code === 'PGRST116') {
+    // Row not found, create default preferences
+    const { data: newPrefs, error: insertError } = await supabase
+      .from('user_preferences')
+      .insert({
+        user_id: userId,
+        overdue_notifications: true,
+        notification_email: null,
+        notification_time: '08:00:00',
+      })
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+    return newPrefs as UserPreferences;
+  }
+
+  if (error) throw error;
+  return data as UserPreferences;
+}
+
+export async function updateUserPreferences(
+  userId: string,
+  updates: Partial<Omit<UserPreferences, 'user_id' | 'created_at'>>
+): Promise<UserPreferences> {
+  const { data, error } = await supabase
+    .from('user_preferences')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as UserPreferences;
 }

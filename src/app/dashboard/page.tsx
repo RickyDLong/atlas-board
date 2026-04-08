@@ -1,7 +1,8 @@
 'use client';
 
-import { useBoard } from '@/hooks/useBoard';
+import { useRealtimeBoard } from '@/hooks/useRealtimeBoard';
 import { useGamification } from '@/hooks/useGamification';
+import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { BoardColumn } from '@/components/board/BoardColumn';
 import { CardModal } from '@/components/board/CardModal';
 import { EpicPanel } from '@/components/board/EpicPanel';
@@ -10,6 +11,7 @@ import { XPBar } from '@/components/board/XPBar';
 import { XPToastStack } from '@/components/board/XPToast';
 import { LevelUpCelebration } from '@/components/board/LevelUpCelebration';
 import { BadgePanel } from '@/components/board/BadgePanel';
+import { UndoToast } from '@/components/board/UndoToast';
 import { PRIORITIES } from '@/types/database';
 import type { Card } from '@/types/database';
 import { signOut, getCurrentUser } from '@/lib/board-actions';
@@ -34,10 +36,12 @@ export default function DashboardPage() {
     addCategory, editCategory, removeCategory,
     loadSubtasks, addSubtask, toggleSubtask, removeSubtask, editSubtask,
     refresh,
-  } = useBoard();
+  } = useRealtimeBoard();
 
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
+  const undoRedo = useUndoRedo();
+  const [activeUndoToast, setActiveUndoToast] = useState<{ description: string; actionId: string } | null>(null);
 
   useEffect(() => {
     getCurrentUser().then(u => setUserId(u?.id || null));
@@ -80,6 +84,14 @@ export default function DashboardPage() {
   const searchRef = useRef<HTMLInputElement>(null);
   const [calendarDate, setCalendarDate] = useState<string | null>(null);
 
+  const handleUndo = useCallback(async () => {
+    await undoRedo.undo();
+  }, [undoRedo]);
+
+  const handleRedo = useCallback(async () => {
+    await undoRedo.redo();
+  }, [undoRedo]);
+
   const shortcutActions = useMemo(() => ({
     onNewCard: () => { setAddToColumnId(columns[0]?.id || null); setShowAddModal(true); },
     onFocusSearch: () => searchRef.current?.focus(),
@@ -96,7 +108,9 @@ export default function DashboardPage() {
     onToggleSettings: () => setShowSettings(prev => !prev),
     onToggleFilters: () => setShowFilters(prev => !prev),
     onShowHelp: () => setShowShortcuts(prev => !prev),
-  }), [columns, showShortcuts, showAddModal, editingCard, detailCard, showSettings, showEpicPanel, contextMenu]);
+    onUndo: handleUndo,
+    onRedo: handleRedo,
+  }), [columns, showShortcuts, showAddModal, editingCard, detailCard, showSettings, showEpicPanel, contextMenu, handleUndo, handleRedo]);
 
   useKeyboardShortcuts(shortcutActions);
 
@@ -119,6 +133,124 @@ export default function DashboardPage() {
       }
     }
   }, [moveCardToColumn, columns, cards, gam]);
+
+  // ─── Undoable card actions ────────────────────────────────────
+
+  const undoableMoveCard = useCallback(async (cardId: string, columnId: string) => {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+
+    const originalColumnId = card.column_id;
+
+    await gamifiedMoveCard(cardId, columnId);
+
+    // Find the target column name for description
+    const targetColumn = columns.find(c => c.id === columnId);
+    const targetName = targetColumn?.title || 'column';
+
+    undoRedo.pushAction({
+      id: `move_${cardId}_${Date.now()}`,
+      type: 'move_card',
+      description: `Move "${card.title}" to ${targetName}`,
+      undo: async () => {
+        await moveCardToColumn(cardId, originalColumnId);
+      },
+      redo: async () => {
+        await gamifiedMoveCard(cardId, columnId);
+      },
+      timestamp: Date.now(),
+    });
+
+    setActiveUndoToast({ description: `Move "${card.title}" to ${targetName}`, actionId: `move_${cardId}_${Date.now()}` });
+  }, [cards, columns, gamifiedMoveCard, moveCardToColumn, undoRedo]);
+
+  const undoableArchiveCard = useCallback(async (cardId: string) => {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+
+    await archiveCard(cardId);
+
+    undoRedo.pushAction({
+      id: `archive_${cardId}_${Date.now()}`,
+      type: 'archive_card',
+      description: `Archive "${card.title}"`,
+      undo: async () => {
+        await unarchiveCard(card);
+      },
+      redo: async () => {
+        await archiveCard(cardId);
+      },
+      timestamp: Date.now(),
+    });
+
+    setActiveUndoToast({ description: `Archive "${card.title}"`, actionId: `archive_${cardId}_${Date.now()}` });
+  }, [cards, archiveCard, unarchiveCard, undoRedo]);
+
+  const undoableRemoveCard = useCallback(async (cardId: string) => {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+
+    // Store full card data for undo
+    const cardData = { ...card };
+
+    await removeCard(cardId);
+
+    undoRedo.pushAction({
+      id: `delete_${cardId}_${Date.now()}`,
+      type: 'delete_card',
+      description: `Delete "${card.title}"`,
+      undo: async () => {
+        // Re-create card with original data (excluding id which will be auto-generated)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id: _id, created_at: _createdAt, updated_at: _updatedAt, ...cardWithoutMetadata } = cardData;
+        const recreatedCard = await addCard(cardWithoutMetadata);
+        // Update position to match original
+        if (recreatedCard) {
+          await editCard(recreatedCard.id, { position: cardData.position });
+        }
+      },
+      redo: async () => {
+        await removeCard(cardId);
+      },
+      timestamp: Date.now(),
+    });
+
+    setActiveUndoToast({ description: `Delete "${card.title}"`, actionId: `delete_${cardId}_${Date.now()}` });
+  }, [cards, removeCard, addCard, editCard, undoRedo]);
+
+  const undoableEditCard = useCallback(async (cardId: string, updates: Partial<Omit<Card, 'id' | 'board_id' | 'created_at'>>) => {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+
+    // Store original values for all fields being updated
+    const originalValues: Record<string, unknown> = {};
+    Object.keys(updates).forEach(key => {
+      originalValues[key] = card[key as keyof Card];
+    });
+
+    await editCard(cardId, updates);
+
+    // Only show toast for significant edits (not real-time typing)
+    const significantFields = ['priority', 'effort', 'epic_id', 'category_id'];
+    const isSignificantEdit = Object.keys(updates).some(key => significantFields.includes(key));
+
+    if (isSignificantEdit) {
+      undoRedo.pushAction({
+        id: `edit_${cardId}_${Date.now()}`,
+        type: 'edit_card',
+        description: `Edit "${card.title}"`,
+        undo: async () => {
+          await editCard(cardId, originalValues);
+        },
+        redo: async () => {
+          await editCard(cardId, updates);
+        },
+        timestamp: Date.now(),
+      });
+
+      setActiveUndoToast({ description: `Edit "${card.title}"`, actionId: `edit_${cardId}_${Date.now()}` });
+    }
+  }, [cards, editCard, undoRedo]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -396,7 +528,7 @@ export default function DashboardPage() {
               onAddCard={(colId) => { setAddToColumnId(colId); setShowAddModal(true); }}
               onCardClick={(card) => setDetailCard(card)}
               onCardMenu={(card, x, y) => setContextMenu({ card, x, y })}
-              onDrop={(colId, cardId) => gamifiedMoveCard(cardId, colId)}
+              onDrop={(colId, cardId) => undoableMoveCard(cardId, colId)}
             />
           ))}
         </div>
@@ -445,16 +577,16 @@ export default function DashboardPage() {
               onClick={() => { setEditingCard(contextMenu.card); setContextMenu(null); }}>Edit</button>
             {columns.filter(c => c.id !== contextMenu.card.column_id).map(col => (
               <button key={col.id} className="block w-full text-left px-3 py-1.5 text-xs text-[#8888a0] rounded hover:bg-[#22222f] hover:text-white transition-all"
-                onClick={() => { gamifiedMoveCard(contextMenu.card.id, col.id); setContextMenu(null); }}>
+                onClick={() => { undoableMoveCard(contextMenu.card.id, col.id); setContextMenu(null); }}>
                 Move to {col.title}
               </button>
             ))}
             {doneCol && contextMenu.card.column_id === doneCol.id && (
               <button className="block w-full text-left px-3 py-1.5 text-xs text-[#a855f7] rounded hover:bg-[#a855f710] transition-all"
-                onClick={() => { archiveCard(contextMenu.card.id); setContextMenu(null); }}>Archive</button>
+                onClick={() => { undoableArchiveCard(contextMenu.card.id); setContextMenu(null); }}>Archive</button>
             )}
             <button className="block w-full text-left px-3 py-1.5 text-xs text-[#f87171] rounded hover:bg-[#f8717110] transition-all"
-              onClick={() => { removeCard(contextMenu.card.id); setContextMenu(null); }}>Delete</button>
+              onClick={() => { undoableRemoveCard(contextMenu.card.id); setContextMenu(null); }}>Delete</button>
           </div>
         </>
       )}
@@ -482,7 +614,7 @@ export default function DashboardPage() {
             onEditSubtask={editingCard ? (id, title) => editSubtask(editingCard.id, id, title) : undefined}
             onSave={async (data) => {
               if (editingCard) {
-                await editCard(editingCard.id, data);
+                await undoableEditCard(editingCard.id, data);
                 setEditingCard(null);
               } else {
                 await gamifiedAddCard(data as Card);
@@ -504,10 +636,10 @@ export default function DashboardPage() {
           epics={epics}
           onEdit={() => { setEditingCard(detailCard); setDetailCard(null); }}
           onClose={() => setDetailCard(null)}
-          onDelete={async () => { await removeCard(detailCard.id); setDetailCard(null); }}
-          onMove={async (colId) => { await gamifiedMoveCard(detailCard.id, colId); setDetailCard({ ...detailCard, column_id: colId }); }}
+          onDelete={async () => { await undoableRemoveCard(detailCard.id); setDetailCard(null); }}
+          onMove={async (colId) => { await undoableMoveCard(detailCard.id, colId); setDetailCard({ ...detailCard, column_id: colId }); }}
           onViewEpic={(epicId) => { setSelectedEpicId(epicId); setShowEpicPanel(true); setDetailCard(null); }}
-          onArchive={doneCol && detailCard.column_id === doneCol.id ? async () => { await archiveCard(detailCard.id); setDetailCard(null); } : undefined}
+          onArchive={doneCol && detailCard.column_id === doneCol.id ? async () => { await undoableArchiveCard(detailCard.id); setDetailCard(null); } : undefined}
         />
       )}
 
@@ -515,6 +647,7 @@ export default function DashboardPage() {
       {showSettings && board && (
         <SettingsModal
           board={board}
+          userId={userId}
           categories={categories}
           columns={columns}
           onAddCategory={addCategory}
@@ -582,6 +715,17 @@ export default function DashboardPage() {
           title={levelUpDisplay.title}
           color={levelUpDisplay.color}
           onComplete={() => setLevelUpDisplay(null)}
+        />
+      )}
+
+      {/* Undo toast notification */}
+      {activeUndoToast && (
+        <UndoToast
+          description={activeUndoToast.description}
+          onUndo={async () => {
+            await undoRedo.undo();
+          }}
+          onDismiss={() => setActiveUndoToast(null)}
         />
       )}
     </div>

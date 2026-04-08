@@ -205,5 +205,11 @@ export function useBoard() {
     addCategory, editCategory, removeCategory,
     loadSubtasks, addSubtask, toggleSubtask, removeSubtask, editSubtask,
     refresh: loadBoard,
+    // Internal setters for realtime updates (not part of public API)
+    __setCards: setCards,
+    __setColumns: setColumns,
+    __setCategories: setCategories,
+    __setEpics: setEpics,
+    __setSubtasks: setSubtasks,
   };
 }

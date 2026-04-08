@@ -73,6 +73,15 @@ export interface Profile {
   created_at: string;
 }
 
+export interface UserPreferences {
+  user_id: string;
+  overdue_notifications: boolean;
+  notification_email: string | null;
+  notification_time: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export type Priority = Card['priority'];
 export type Effort = NonNullable<Card['effort']>;
 export type EpicStatus = Epic['status'];

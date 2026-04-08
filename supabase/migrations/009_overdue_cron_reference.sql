@@ -1,0 +1,34 @@
+-- Reference: Setup pg_cron for Overdue Notifications
+--
+-- This migration documents the setup required for the overdue notifications feature.
+-- Automated cron scheduling via migration is unreliable. Instead, set up pg_cron manually:
+--
+-- SETUP STEPS (run via Supabase Dashboard > SQL Editor):
+-- 1. Enable the pg_cron and pg_net extensions:
+--    create extension if not exists pg_cron;
+--    create extension if not exists pg_net;
+--
+-- 2. Schedule the daily cron job:
+--    select cron.schedule(
+--      'overdue-notifications-daily',
+--      '0 8 * * *',
+--      $$
+--      select net.http_post(
+--        url := 'https://nytptdgxzxhrhqkiouco.supabase.co/functions/v1/overdue-notify',
+--        headers := jsonb_build_object(
+--          'Authorization', 'Bearer YOUR_SERVICE_ROLE_KEY',
+--          'Content-Type', 'application/json'
+--        ),
+--        body := '{}'::jsonb
+--      ) as request_id;
+--      $$
+--    );
+--
+-- 3. Verify the cron job:
+--    select * from cron.job;
+--
+-- NOTES:
+-- - Replace YOUR_SERVICE_ROLE_KEY with your actual Supabase service role key
+-- - The cron job runs daily at 8 AM UTC
+-- - Edge function is at: /supabase/functions/overdue-notify/index.ts
+-- - For testing, invoke the function manually via curl or use the Supabase dashboard

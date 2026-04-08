@@ -10,6 +10,8 @@ interface ShortcutActions {
   onToggleSettings: () => void;
   onToggleFilters: () => void;
   onShowHelp: () => void;
+  onUndo?: () => Promise<void>;
+  onRedo?: () => Promise<void>;
 }
 
 export function useKeyboardShortcuts(actions: ShortcutActions) {
@@ -21,6 +23,23 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
     // Escape always works (close modals)
     if (e.key === 'Escape') {
       actions.onCloseModal();
+      return;
+    }
+
+    // Handle undo/redo with modifiers (Ctrl+Z / Cmd+Z, Ctrl+Shift+Z / Cmd+Shift+Z)
+    const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const isUndo = (isMac ? e.metaKey : e.ctrlKey) && e.key === 'z' && !e.shiftKey;
+    const isRedo = (isMac ? e.metaKey : e.ctrlKey) && e.key === 'z' && e.shiftKey;
+
+    if (isUndo && actions.onUndo) {
+      e.preventDefault();
+      actions.onUndo();
+      return;
+    }
+
+    if (isRedo && actions.onRedo) {
+      e.preventDefault();
+      actions.onRedo();
       return;
     }
 
@@ -65,6 +84,8 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
 }
 
 export const SHORTCUTS = [
+  { key: 'Cmd+Z / Ctrl+Z', description: 'Undo' },
+  { key: 'Cmd+Shift+Z / Ctrl+Shift+Z', description: 'Redo' },
   { key: 'N', description: 'New card' },
   { key: '/', description: 'Focus search' },
   { key: 'E', description: 'Toggle epics panel' },

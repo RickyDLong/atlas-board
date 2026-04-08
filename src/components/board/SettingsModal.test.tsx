@@ -6,6 +6,7 @@ import { mockBoard, mockCategories, mockColumns } from '@/__tests__/fixtures';
 describe('SettingsModal', () => {
   const defaultProps = {
     board: mockBoard,
+    userId: null,
     categories: mockCategories,
     columns: mockColumns,
     onAddCategory: vi.fn().mockResolvedValue(undefined),
