@@ -85,37 +85,37 @@ describe('gamification-actions', () => {
   });
 
   describe('titleForLevel', () => {
-    it('returns Recruit for level 1', () => {
-      expect(titleForLevel(1)).toBe('Recruit');
+    it('returns Wanderer for level 1', () => {
+      expect(titleForLevel(1)).toBe('Wanderer');
     });
 
-    it('returns Apprentice for level 5', () => {
-      expect(titleForLevel(5)).toBe('Apprentice');
+    it('returns Squire for level 5', () => {
+      expect(titleForLevel(5)).toBe('Squire');
     });
 
-    it('returns Specialist for level 10', () => {
-      expect(titleForLevel(10)).toBe('Specialist');
+    it('returns Blade Adept for level 10', () => {
+      expect(titleForLevel(10)).toBe('Blade Adept');
     });
 
-    it('returns Strategist for level 20', () => {
-      expect(titleForLevel(20)).toBe('Strategist');
+    it('returns Runecaster for level 20', () => {
+      expect(titleForLevel(20)).toBe('Runecaster');
     });
 
-    it('returns Commander for level 30', () => {
-      expect(titleForLevel(30)).toBe('Commander');
+    it('returns Shadow Monarch for level 30', () => {
+      expect(titleForLevel(30)).toBe('Shadow Monarch');
     });
 
-    it('returns Warlord for level 40', () => {
-      expect(titleForLevel(40)).toBe('Warlord');
+    it('returns Dragon Slayer for level 40', () => {
+      expect(titleForLevel(40)).toBe('Dragon Slayer');
     });
 
-    it('returns Atlas Prime for level 50', () => {
-      expect(titleForLevel(50)).toBe('Atlas Prime');
+    it('returns Mythic Titan for level 50', () => {
+      expect(titleForLevel(50)).toBe('Mythic Titan');
     });
 
     it('returns correct title for mid-range levels', () => {
-      expect(titleForLevel(15)).toBe('Specialist');
-      expect(titleForLevel(25)).toBe('Strategist');
+      expect(titleForLevel(15)).toBe('Blade Adept');
+      expect(titleForLevel(25)).toBe('Runecaster');
     });
   });
 

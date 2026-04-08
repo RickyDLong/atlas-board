@@ -163,7 +163,7 @@ export function WelcomeModal({ onComplete, isGamified = true }: WelcomeModalProp
     },
     {
       title: 'Everything Earns XP',
-      body: 'Complete cards, hit deadlines, keep your streak alive. Watch your rank climb from Recruit to Atlas Prime. Higher priority cards earn more.',
+      body: 'Complete cards, hit deadlines, keep your streak alive. Watch your rank climb from Wanderer to Mythic Titan. Higher priority cards earn more.',
       illustration: (
         <svg viewBox="0 0 200 180" className="w-full h-full">
           <defs>

@@ -40,7 +40,7 @@ export function levelFromXP(totalXP: number): number {
 /** Get the title for a given level */
 export function titleForLevel(level: number): string {
   const entry = LEVEL_TITLES.find(t => level >= t.minLevel);
-  return entry?.title || 'Recruit';
+  return entry?.title || 'Wanderer';
 }
 
 /** Get the color for a given level */
@@ -71,7 +71,7 @@ export async function getUserLevel(userId: string): Promise<UserLevel> {
     user_id: userId,
     current_xp: 0,
     current_level: 1,
-    title: 'Recruit',
+    title: 'Wanderer',
   };
   const { data: created, error } = await supabase
     .from('user_levels')

@@ -225,13 +225,13 @@ export const STREAK_XP_MULTIPLIER: { minDays: number; multiplier: number }[] = [
 ];
 
 export const LEVEL_TITLES: LevelTitle[] = [
-  { minLevel: 50, title: 'Atlas Prime', color: '#fbbf24' },
-  { minLevel: 40, title: 'Warlord', color: '#f87171' },
-  { minLevel: 30, title: 'Commander', color: '#fb923c' },
-  { minLevel: 20, title: 'Strategist', color: '#a855f7' },
-  { minLevel: 10, title: 'Specialist', color: '#4a9eff' },
-  { minLevel: 5, title: 'Apprentice', color: '#34d399' },
-  { minLevel: 1, title: 'Recruit', color: '#8888a0' },
+  { minLevel: 50, title: 'Mythic Titan', color: '#fbbf24' },
+  { minLevel: 40, title: 'Dragon Slayer', color: '#f87171' },
+  { minLevel: 30, title: 'Shadow Monarch', color: '#fb923c' },
+  { minLevel: 20, title: 'Runecaster', color: '#a855f7' },
+  { minLevel: 10, title: 'Blade Adept', color: '#4a9eff' },
+  { minLevel: 5, title: 'Squire', color: '#34d399' },
+  { minLevel: 1, title: 'Wanderer', color: '#8888a0' },
 ];
 
 export const BADGE_DEFINITIONS: BadgeDefinition[] = [

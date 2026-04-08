@@ -88,15 +88,15 @@ describe('Gamification Constants', () => {
       expect(LEVEL_TITLES).toHaveLength(7);
     });
 
-    it('starts at level 1 (Recruit)', () => {
+    it('starts at level 1 (Wanderer)', () => {
       const last = LEVEL_TITLES[LEVEL_TITLES.length - 1];
       expect(last.minLevel).toBe(1);
-      expect(last.title).toBe('Recruit');
+      expect(last.title).toBe('Wanderer');
     });
 
-    it('ends at level 50 (Atlas Prime)', () => {
+    it('ends at level 50 (Mythic Titan)', () => {
       expect(LEVEL_TITLES[0].minLevel).toBe(50);
-      expect(LEVEL_TITLES[0].title).toBe('Atlas Prime');
+      expect(LEVEL_TITLES[0].title).toBe('Mythic Titan');
     });
 
     it('all titles have colors', () => {
