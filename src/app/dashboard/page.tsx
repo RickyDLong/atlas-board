@@ -378,6 +378,17 @@ export default function DashboardPage() {
             </button>
           </div>
           <button
+            onClick={() => setShowWelcome(true)}
+            className="w-8 h-8 bg-transparent border border-[#2a2a3a] text-[#8888a0] rounded-lg flex items-center justify-center hover:bg-[#1a1a26] hover:text-[#4a9eff] transition-all cursor-pointer"
+            title="How it works"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <circle cx="12" cy="17" r="0.5" fill="currentColor" />
+            </svg>
+          </button>
+          <button
             onClick={() => setShowShortcuts(true)}
             className="w-8 h-8 bg-transparent border border-[#2a2a3a] text-[#8888a0] rounded-lg flex items-center justify-center text-xs font-mono hover:bg-[#1a1a26] hover:text-white transition-all cursor-pointer"
             title="Keyboard shortcuts"
