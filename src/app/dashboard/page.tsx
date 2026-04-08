@@ -154,24 +154,24 @@ function DashboardContent() {
   // ─── Gamified card actions ─────────────────────────────────
   const gamifiedAddCard = useCallback(async (card: Omit<Card, 'id' | 'created_at' | 'updated_at'>) => {
     const newCard = await addCard(card as Card);
-    if (isGamified) {
-      await gam.awardXP('card_create', { card_title: card.title });
-    }
+    // Always track XP regardless of display toggle — toggle only controls UI
+    await gam.awardXP('card_create', { card_title: card.title });
     return newCard;
-  }, [addCard, gam, isGamified]);
+  }, [addCard, gam]);
 
   const gamifiedMoveCard = useCallback(async (cardId: string, columnId: string) => {
     await moveCardToColumn(cardId, columnId);
     // Check if moved to Done column (last column by position)
     const sorted = [...columns].sort((a, b) => a.position - b.position);
     const lastCol = sorted.length > 0 ? sorted[sorted.length - 1] : undefined;
-    if (lastCol && columnId === lastCol.id && isGamified) {
+    // Always track completion XP — toggle only controls UI toasts/animations
+    if (lastCol && columnId === lastCol.id) {
       const card = cards.find(c => c.id === cardId);
       if (card) {
         await gam.awardCardCompletion(card);
       }
     }
-  }, [moveCardToColumn, columns, cards, gam, isGamified]);
+  }, [moveCardToColumn, columns, cards, gam]);
 
   // ─── Undoable card actions ────────────────────────────────────
 
