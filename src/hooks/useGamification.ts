@@ -4,6 +4,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { UserLevel, UserStreak, UserBadge, XPAction, Card } from '@/types/database';
 import { BADGE_DEFINITIONS } from '@/types/database';
 import * as gamification from '@/lib/gamification-actions';
+import { createClient } from '@/lib/supabase/client';
+
+/** How long to mute realtime after a local XP mutation (ms) */
+const REALTIME_MUTE_MS = 600;
 
 export interface XPToast {
   id: string;
@@ -22,6 +26,17 @@ export function useGamification(userId: string | null, boardId: string | null, s
   const [xpToasts, setXpToasts] = useState<XPToast[]>([]);
   const [loading, setLoading] = useState(true);
   const toastIdRef = useRef(0);
+
+  // Mute realtime updates briefly after local mutations to avoid double-renders
+  const muteRealtimeRef = useRef(false);
+  const muteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const muteRealtime = useCallback(() => {
+    muteRealtimeRef.current = true;
+    if (muteTimerRef.current) clearTimeout(muteTimerRef.current);
+    muteTimerRef.current = setTimeout(() => {
+      muteRealtimeRef.current = false;
+    }, REALTIME_MUTE_MS);
+  }, []);
 
   // Load initial gamification state
   const loadGamification = useCallback(async () => {
@@ -44,6 +59,54 @@ export function useGamification(userId: string | null, boardId: string | null, s
   }, [userId]);
 
   useEffect(() => { loadGamification(); }, [loadGamification]);
+
+  // ─── Realtime subscriptions for cross-tab sync ────────────
+  useEffect(() => {
+    if (!userId) return;
+    const supabase = createClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const channel: any = supabase.channel(`gamification-${userId}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    // user_levels — UPDATE (upsert always updates after initial insert)
+    channel.on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'user_levels', filter: `user_id=eq.${userId}` },
+      (payload: { new: UserLevel }) => {
+        if (muteRealtimeRef.current) return;
+        setLevel(payload.new);
+      }
+    );
+
+    // user_streaks — UPDATE
+    channel.on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'user_streaks', filter: `user_id=eq.${userId}` },
+      (payload: { new: UserStreak }) => {
+        if (muteRealtimeRef.current) return;
+        setStreak(payload.new);
+      }
+    );
+
+    // user_badges — INSERT (badges are only ever inserted, never updated)
+    channel.on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'user_badges', filter: `user_id=eq.${userId}` },
+      (payload: { new: UserBadge }) => {
+        if (muteRealtimeRef.current) return;
+        setBadges(prev => [payload.new, ...prev]);
+      }
+    );
+
+    channel.subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (muteTimerRef.current) clearTimeout(muteTimerRef.current);
+    };
+  }, [userId]);
 
   // Auto-dismiss toasts after 4 seconds
   useEffect(() => {
@@ -76,6 +139,8 @@ export function useGamification(userId: string | null, boardId: string | null, s
     if (!userId || !boardId) return null;
     try {
       const result = await gamification.awardXP(userId, boardId, action, metadata);
+      // Mute realtime so this tab doesn't double-process its own DB write
+      muteRealtime();
       // Update local state
       setLevel(prev => prev ? {
         ...prev,
@@ -101,7 +166,7 @@ export function useGamification(userId: string | null, boardId: string | null, s
     } catch {
       return null;
     }
-  }, [userId, boardId, addToast, showToasts]);
+  }, [userId, boardId, addToast, showToasts, muteRealtime]);
 
   // Convenience: award XP for completing a card
   const awardCardCompletion = useCallback(async (card: Card) => {
@@ -109,6 +174,8 @@ export function useGamification(userId: string | null, boardId: string | null, s
     try {
       const result = await gamification.awardCardCompletionXP(userId, boardId, card);
       if (result) {
+        // Mute realtime so this tab doesn't double-process its own DB write
+        muteRealtime();
         setLevel(prev => prev ? {
           ...prev,
           current_xp: result.newTotalXP,
@@ -132,7 +199,7 @@ export function useGamification(userId: string | null, boardId: string | null, s
     } catch {
       // Non-blocking
     }
-  }, [userId, boardId, addToast, showToasts]);
+  }, [userId, boardId, addToast, showToasts, muteRealtime]);
 
   const dismissToast = useCallback((id: string) => {
     setXpToasts(prev => prev.filter(t => t.id !== id));
