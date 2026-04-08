@@ -75,6 +75,16 @@ export function SettingsModal({
     }
   };
 
+  const handleGamificationToggle = async (enabled: boolean) => {
+    if (!userId || !prefs) return;
+    try {
+      const updated = await updateUserPreferences(userId, { gamification_enabled: enabled });
+      setPrefs(updated);
+    } catch (err) {
+      console.error('Failed to update gamification preference:', err);
+    }
+  };
+
   const moveColumn = (idx: number, dir: number) => {
     const newIdx = idx + dir;
     if (newIdx < 0 || newIdx >= columns.length) return;
@@ -200,6 +210,24 @@ export function SettingsModal({
                     <p className="text-[#555568] text-[11px] italic">
                       Notifications are sent daily at your preferred time if you have overdue cards on your board.
                     </p>
+                  </div>
+
+                  <div className="px-3 py-2.5 bg-[#1a1a26] border border-[#1e1e2e] rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-[#e8e8f0] text-[13px] font-medium">RPG Mode</p>
+                        <p className="text-[#555568] text-[12px] mt-0.5">Enable XP, levels, badges, streaks, and RPG-themed column names.</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={prefs.gamification_enabled}
+                          onChange={e => handleGamificationToggle(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-[#2a2a3a] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#4a9eff]"></div>
+                      </label>
+                    </div>
                   </div>
 
                   <button

@@ -3,6 +3,7 @@
 import type { Column, Card, Category, Subtask } from '@/types/database';
 import { PRIORITIES } from '@/types/database';
 import { BoardCard } from './BoardCard';
+import { useGamificationMode } from '@/contexts/GamificationModeContext';
 
 interface BoardColumnProps {
   column: Column;
@@ -19,6 +20,8 @@ interface BoardColumnProps {
 export function BoardColumn({
   column, cards, categories, columns, subtasks = {}, onAddCard, onCardClick, onCardMenu, onDrop,
 }: BoardColumnProps) {
+  const { columnDisplayName, isGamified } = useGamificationMode();
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -30,6 +33,8 @@ export function BoardColumn({
     if (cardId) onDrop(column.id, cardId);
   };
 
+  const displayTitle = columnDisplayName(column.title);
+
   return (
     <div
       className="flex-1 min-w-[240px] bg-[#0a0a0f] flex flex-col"
@@ -40,7 +45,7 @@ export function BoardColumn({
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full" style={{ background: column.color }} />
           <h3 className="text-xs font-semibold uppercase tracking-wider text-[#8888a0]">
-            {column.title}
+            {displayTitle}
           </h3>
           <span className="font-mono text-[11px] text-[#555568] bg-[#1a1a26] px-1.5 py-0.5 rounded">
             {cards.length}
@@ -79,6 +84,7 @@ export function BoardColumn({
               priority={pri}
               subtaskProgress={subtaskProgress}
               isDoneColumn={isDone}
+              showShields={isGamified}
               onClick={() => onCardClick(card)}
               onMenu={(x, y) => onCardMenu(card, x, y)}
             />

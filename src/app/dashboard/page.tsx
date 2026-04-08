@@ -3,6 +3,7 @@
 import { useRealtimeBoard } from '@/hooks/useRealtimeBoard';
 import { useGamification } from '@/hooks/useGamification';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
+import { GamificationModeProvider, useGamificationMode } from '@/contexts/GamificationModeContext';
 import { BoardColumn } from '@/components/board/BoardColumn';
 import { CardModal } from '@/components/board/CardModal';
 import { EpicPanel } from '@/components/board/EpicPanel';
@@ -29,6 +30,20 @@ import { AtlasLogo } from '@/components/AtlasLogo';
 type ViewMode = 'board' | 'calendar' | 'stats' | 'list';
 
 export default function DashboardPage() {
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    getCurrentUser().then(u => setUserId(u?.id || null));
+  }, []);
+
+  return (
+    <GamificationModeProvider userId={userId}>
+      <DashboardContent />
+    </GamificationModeProvider>
+  );
+}
+
+function DashboardContent() {
   const {
     board, columns, categories, cards, epics, subtasks, loading, error,
     addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards,
@@ -40,11 +55,13 @@ export default function DashboardPage() {
   } = useRealtimeBoard();
 
   const router = useRouter();
-  const [userId, setUserId] = useState<string | null>(null);
+  const { isGamified, toggleGamification } = useGamificationMode();
   const [showWelcome, setShowWelcome] = useState(false);
   const undoRedo = useUndoRedo();
   const [activeUndoToast, setActiveUndoToast] = useState<{ description: string; actionId: string } | null>(null);
 
+  // Get userId from gamification context (which is set in parent)
+  const [userId, setUserId] = useState<string | null>(null);
   useEffect(() => {
     getCurrentUser().then(u => setUserId(u?.id || null));
   }, []);
@@ -137,22 +154,24 @@ export default function DashboardPage() {
   // ─── Gamified card actions ─────────────────────────────────
   const gamifiedAddCard = useCallback(async (card: Omit<Card, 'id' | 'created_at' | 'updated_at'>) => {
     const newCard = await addCard(card as Card);
-    await gam.awardXP('card_create', { card_title: card.title });
+    if (isGamified) {
+      await gam.awardXP('card_create', { card_title: card.title });
+    }
     return newCard;
-  }, [addCard, gam]);
+  }, [addCard, gam, isGamified]);
 
   const gamifiedMoveCard = useCallback(async (cardId: string, columnId: string) => {
     await moveCardToColumn(cardId, columnId);
     // Check if moved to Done column (last column by position)
     const sorted = [...columns].sort((a, b) => a.position - b.position);
     const lastCol = sorted.length > 0 ? sorted[sorted.length - 1] : undefined;
-    if (lastCol && columnId === lastCol.id) {
+    if (lastCol && columnId === lastCol.id && isGamified) {
       const card = cards.find(c => c.id === cardId);
       if (card) {
         await gam.awardCardCompletion(card);
       }
     }
-  }, [moveCardToColumn, columns, cards, gam]);
+  }, [moveCardToColumn, columns, cards, gam, isGamified]);
 
   // ─── Undoable card actions ────────────────────────────────────
 
@@ -328,16 +347,18 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           {/* XP Bar */}
-          <XPBar
-            level={gam.level}
-            streak={gam.streak}
-            levelProgress={gam.levelProgress}
-            xpInCurrentLevel={gam.xpInCurrentLevel}
-            xpNeededForNext={gam.xpNeededForNext}
-            levelColor={gam.levelColor}
-            badgeCount={gam.badges.length}
-            onClickStats={() => setShowBadgePanel(true)}
-          />
+          {isGamified && (
+            <XPBar
+              level={gam.level}
+              streak={gam.streak}
+              levelProgress={gam.levelProgress}
+              xpInCurrentLevel={gam.xpInCurrentLevel}
+              xpNeededForNext={gam.xpNeededForNext}
+              levelColor={gam.levelColor}
+              badgeCount={gam.badges.length}
+              onClickStats={() => setShowBadgePanel(true)}
+            />
+          )}
 
           <input
             ref={searchRef}
@@ -414,6 +435,14 @@ export default function DashboardPage() {
             title="Settings"
           >
             &#9881;
+          </button>
+          <button
+            onClick={toggleGamification}
+            className="w-8 h-8 bg-transparent border border-[#2a2a3a] rounded-lg flex items-center justify-center text-sm transition-all cursor-pointer"
+            style={{ color: isGamified ? '#a855f7' : '#8888a0', borderColor: isGamified ? '#a855f7' : '#2a2a3a' }}
+            title={isGamified ? 'RPG Mode (on)' : 'Clean Mode (on)'}
+          >
+            {isGamified ? '⚔' : '📋'}
           </button>
           <button
             onClick={() => { setAddToColumnId(columns[0]?.id || null); setShowAddModal(true); }}
@@ -699,6 +728,7 @@ export default function DashboardPage() {
       {/* Welcome/Onboarding modal */}
       {showWelcome && (
         <WelcomeModal
+          isGamified={isGamified}
           onComplete={async () => {
             if (userId) {
               try {
@@ -740,7 +770,7 @@ export default function DashboardPage() {
       )}
 
       {/* Badge panel */}
-      {showBadgePanel && (
+      {isGamified && showBadgePanel && (
         <BadgePanel
           badges={gam.badges}
           level={gam.level}
@@ -754,10 +784,10 @@ export default function DashboardPage() {
       )}
 
       {/* XP Toast notifications */}
-      <XPToastStack toasts={gam.xpToasts} onDismiss={gam.dismissToast} />
+      {isGamified && <XPToastStack toasts={gam.xpToasts} onDismiss={gam.dismissToast} />}
 
       {/* Level-up celebration */}
-      {levelUpDisplay && (
+      {isGamified && levelUpDisplay && (
         <LevelUpCelebration
           level={levelUpDisplay.level}
           title={levelUpDisplay.title}

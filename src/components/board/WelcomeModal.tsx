@@ -4,20 +4,24 @@ import { useState, useCallback } from 'react';
 
 interface WelcomeModalProps {
   onComplete: () => void;
+  isGamified?: boolean;
 }
 
-type SlideIndex = 0 | 1 | 2 | 3 | 4;
+type SlideIndexGamified = 0 | 1 | 2 | 3 | 4;
+type SlideIndexClean = 0 | 1 | 2;
+type SlideIndex = SlideIndexGamified | SlideIndexClean;
 
-export function WelcomeModal({ onComplete }: WelcomeModalProps) {
+export function WelcomeModal({ onComplete, isGamified = true }: WelcomeModalProps) {
   const [currentSlide, setCurrentSlide] = useState<SlideIndex>(0);
+  const maxSlides = isGamified ? 5 : 3;
 
   const handleNext = useCallback(() => {
-    if (currentSlide === 4) {
+    if (currentSlide === maxSlides - 1) {
       onComplete();
     } else {
       setCurrentSlide((prev) => (prev + 1) as SlideIndex);
     }
-  }, [currentSlide, onComplete]);
+  }, [currentSlide, maxSlides, onComplete]);
 
   const handleBack = useCallback(() => {
     if (currentSlide > 0) {
@@ -29,7 +33,7 @@ export function WelcomeModal({ onComplete }: WelcomeModalProps) {
     onComplete();
   }, [onComplete]);
 
-  const slides = [
+  const gamifiedSlides = [
     {
       title: 'Your Quest Board',
       body: 'Atlas turns your tasks into quests. Drag cards across columns as you make progress — from idea to done. No experience needed.',
@@ -310,6 +314,154 @@ export function WelcomeModal({ onComplete }: WelcomeModalProps) {
     },
   ];
 
+  const cleanSlides = [
+    {
+      title: 'Welcome to Atlas',
+      body: 'Your personal task board. Create cards, drag them across columns as you make progress.',
+      illustration: (
+        <svg viewBox="0 0 200 180" className="w-full h-full">
+          <defs>
+            <linearGradient id="cleanShieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#4a9eff" stopOpacity="0.1" />
+              <stop offset="100%" stopColor="#4a9eff" stopOpacity="0.05" />
+            </linearGradient>
+          </defs>
+
+          <path
+            d="M 100 20 L 160 50 L 160 100 Q 100 160 100 160 Q 100 160 40 100 L 40 50 Z"
+            fill="url(#cleanShieldGrad)"
+            stroke="#4a9eff"
+            strokeWidth="2"
+          />
+
+          <path
+            d="M 100 35 L 150 60 L 150 95 Q 100 140 100 140 Q 100 140 50 95 L 50 60 Z"
+            fill="none"
+            stroke="#4a9eff"
+            strokeWidth="1"
+            opacity="0.5"
+          />
+
+          <g transform="translate(100, 85)">
+            <circle cx="0" cy="0" r="20" fill="#4a9eff" opacity="0.15" />
+            <path
+              d="M -8 2 L -2 8 L 10 -4"
+              stroke="#4a9eff"
+              strokeWidth="2.5"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </g>
+
+          <circle cx="100" cy="80" r="45" fill="none" stroke="#4a9eff" strokeWidth="1" opacity="0.2" />
+          <circle cx="100" cy="80" r="55" fill="none" stroke="#4a9eff" strokeWidth="0.5" opacity="0.1" />
+        </svg>
+      ),
+    },
+    {
+      title: 'The Flow',
+      body: 'Backlog → Up Next → In Progress → Review → Done. Move cards right as you work on them.',
+      illustration: (
+        <svg viewBox="0 0 240 160" className="w-full h-full">
+          <defs>
+            <linearGradient id="cleanFlowGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+              <stop offset="0%" stopColor="#555568" stopOpacity="0.3" />
+              <stop offset="50%" stopColor="#4a9eff" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#34d399" stopOpacity="0.3" />
+            </linearGradient>
+          </defs>
+
+          {[0, 45, 90, 135, 180].map((x) => (
+            <g key={x}>
+              <rect
+                x={x + 5}
+                y="30"
+                width="35"
+                height="100"
+                fill="url(#cleanFlowGrad)"
+                stroke={['#555568', '#fbbf24', '#4a9eff', '#a855f7', '#34d399'][
+                  Math.floor(x / 45)
+                ]}
+                strokeWidth="1.5"
+                rx="4"
+                opacity="0.6"
+              />
+            </g>
+          ))}
+
+          {[0, 45, 90, 135].map((x) => (
+            <g key={`arrow-${x}`}>
+              <path
+                d={`M ${x + 42} 80 L ${x + 50} 80`}
+                stroke="#8888a0"
+                strokeWidth="1.5"
+                fill="none"
+                markerEnd="url(#arrowhead)"
+              />
+            </g>
+          ))}
+
+          <defs>
+            <marker
+              id="arrowhead"
+              markerWidth="10"
+              markerHeight="10"
+              refX="5"
+              refY="3"
+              orient="auto"
+            >
+              <polygon points="0 0, 6 3, 0 6" fill="#8888a0" />
+            </marker>
+          </defs>
+
+          <text x="22" y="155" fontSize="10" fill="#8888a0" textAnchor="middle" fontFamily="JetBrains Mono">
+            Backlog
+          </text>
+          <text x="67" y="155" fontSize="10" fill="#8888a0" textAnchor="middle" fontFamily="JetBrains Mono">
+            Next
+          </text>
+          <text x="112" y="155" fontSize="10" fill="#8888a0" textAnchor="middle" fontFamily="JetBrains Mono">
+            Progress
+          </text>
+          <text x="157" y="155" fontSize="10" fill="#8888a0" textAnchor="middle" fontFamily="JetBrains Mono">
+            Review
+          </text>
+          <text x="202" y="155" fontSize="10" fill="#8888a0" textAnchor="middle" fontFamily="JetBrains Mono">
+            Done
+          </text>
+        </svg>
+      ),
+    },
+    {
+      title: 'You\'re Ready',
+      body: 'Create your first card to get started. You can revisit this guide anytime from Settings.',
+      illustration: (
+        <svg viewBox="0 0 200 180" className="w-full h-full">
+          <defs>
+            <linearGradient id="cleanCheckGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stopColor="#4a9eff" />
+              <stop offset="100%" stopColor="#34d399" />
+            </linearGradient>
+          </defs>
+
+          <g transform="translate(100, 90)">
+            <circle cx="0" cy="0" r="50" fill="url(#cleanCheckGrad)" opacity="0.15" stroke="url(#cleanCheckGrad)" strokeWidth="2" />
+            <path
+              d="M -25 0 L -5 20 L 30 -15"
+              stroke="url(#cleanCheckGrad)"
+              strokeWidth="4"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </g>
+        </svg>
+      ),
+    },
+  ];
+
+  const slides = isGamified ? gamifiedSlides : cleanSlides;
   const slide = slides[currentSlide];
 
   return (
@@ -332,7 +484,7 @@ export function WelcomeModal({ onComplete }: WelcomeModalProps) {
 
         {/* Step indicators */}
         <div className="flex justify-center gap-2 px-8 py-4">
-          {Array.from({ length: 5 }).map((_, idx) => (
+          {Array.from({ length: maxSlides }).map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentSlide(idx as SlideIndex)}
@@ -368,7 +520,7 @@ export function WelcomeModal({ onComplete }: WelcomeModalProps) {
             onClick={handleNext}
             className="bg-[#4a9eff] hover:bg-[#3a8eef] text-white text-sm font-semibold px-5 py-2 rounded-lg transition-all cursor-pointer"
           >
-            {currentSlide === 4 ? "Let's Go" : 'Next'}
+            {currentSlide === maxSlides - 1 ? "Let's Go" : 'Next'}
           </button>
         </div>
       </div>

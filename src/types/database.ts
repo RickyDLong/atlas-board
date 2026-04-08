@@ -79,6 +79,7 @@ export interface UserPreferences {
   notification_email: string | null;
   notification_time: string;
   has_seen_onboarding: boolean;
+  gamification_enabled: boolean;
   created_at: string;
   updated_at: string;
 }

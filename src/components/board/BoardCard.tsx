@@ -9,6 +9,7 @@ interface BoardCardProps {
   priority?: { id: string; label: string; color: string };
   subtaskProgress?: { done: number; total: number } | null;
   isDoneColumn?: boolean;
+  showShields?: boolean;
   onClick: () => void;
   onMenu: (x: number, y: number) => void;
 }
@@ -30,7 +31,7 @@ export function getShieldAging(card: Card, isDoneColumn: boolean): { count: numb
   return { count: 4, color: '#f87171', label: `${days} days in column` };
 }
 
-export function BoardCard({ card, category, priority, subtaskProgress = null, isDoneColumn = false, onClick, onMenu }: BoardCardProps) {
+export function BoardCard({ card, category, priority, subtaskProgress = null, isDoneColumn = false, showShields = true, onClick, onMenu }: BoardCardProps) {
   const [dragging, setDragging] = useState(false);
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -39,7 +40,7 @@ export function BoardCard({ card, category, priority, subtaskProgress = null, is
     e.dataTransfer.setData('text/plain', card.id);
   };
 
-  const aging = getShieldAging(card, isDoneColumn);
+  const aging = showShields ? getShieldAging(card, isDoneColumn) : null;
 
   return (
     <div
