@@ -68,6 +68,12 @@ export function XPToastStack({ toasts, onDismiss }: XPToastProps) {
                 </span>
               )}
 
+              {toast.freezeUsed && (
+                <span className="text-[10px] font-semibold" style={{ color: '#22d3ee' }}>
+                  {'\u2744\uFE0F'} Streak freeze used &mdash; {toast.freezeTokensRemaining} left
+                </span>
+              )}
+
               {toast.newBadges.length > 0 && (
                 <span className="text-[10px] font-semibold" style={{ color: '#fbbf24' }}>
                   {toast.newBadges.join(', ')}

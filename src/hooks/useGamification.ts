@@ -17,6 +17,8 @@ export interface XPToast {
   newLevel?: number;
   newTitle?: string;
   newBadges: string[];
+  freezeUsed: boolean;
+  freezeTokensRemaining: number;
 }
 
 export function useGamification(userId: string | null, boardId: string | null, showToasts: boolean = true) {
@@ -130,6 +132,8 @@ export function useGamification(userId: string | null, boardId: string | null, s
         const def = BADGE_DEFINITIONS.find(b => b.key === key);
         return def ? `${def.icon} ${def.name}` : key;
       }),
+      freezeUsed: result.freezeUsed,
+      freezeTokensRemaining: result.freezeTokensRemaining,
     };
     setXpToasts(prev => [...prev, toast]);
   }, []);
@@ -149,6 +153,7 @@ export function useGamification(userId: string | null, boardId: string | null, s
         current_streak: result.currentStreak,
         longest_streak: Math.max(prev.longest_streak, result.currentStreak),
         last_active_date: new Date().toISOString().slice(0, 10),
+        freeze_tokens: result.freezeTokensRemaining,
       } : prev);
     }
     if (result.newBadges.length > 0 && userId) {

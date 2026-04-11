@@ -28,6 +28,8 @@ import { ListView } from '@/components/board/ListView';
 import { ArchivePanel } from '@/components/board/ArchivePanel';
 import { SavedFilterBar } from '@/components/board/SavedFilterBar';
 import { AtlasLogo } from '@/components/AtlasLogo';
+import { DailyQuests } from '@/components/board/DailyQuests';
+import { incrementQuestProgress } from '@/lib/daily-quest-actions';
 
 type ViewMode = 'board' | 'calendar' | 'stats' | 'list';
 
@@ -164,8 +166,12 @@ function DashboardContent() {
     const newCard = await addCard(card as Card);
     // Always track XP regardless of display toggle — toggle only controls UI
     await gam.awardXP('card_create', { card_title: card.title });
+    // Quest progress — fire and forget, non-blocking
+    if (userId && board?.id) {
+      incrementQuestProgress(userId, board.id, 'create_cards').catch(() => {});
+    }
     return newCard;
-  }, [addCard, gam]);
+  }, [addCard, gam, userId, board]);
 
   const gamifiedMoveCard = useCallback(async (cardId: string, columnId: string) => {
     await moveCardToColumn(cardId, columnId);
@@ -176,9 +182,30 @@ function DashboardContent() {
       const card = cards.find(c => c.id === cardId);
       if (card) {
         await gam.awardCardCompletion(card);
+
+        // Epic completion bonus: if this was the last card in the epic, award 200 XP
+        if (card.epic_id) {
+          const epicCards = cards.filter(c => c.epic_id === card.epic_id && !c.archived_at);
+          // The moved card's column_id may not reflect in state yet — check by id
+          const allDone = epicCards.length > 0 && epicCards.every(c =>
+            c.id === cardId || c.column_id === doneColumn.id
+          );
+          if (allDone) {
+            const epic = epics.find(e => e.id === card.epic_id);
+            await gam.awardXP('epic_complete', { epic_id: card.epic_id, epic_name: epic?.name || 'Epic' });
+          }
+        }
+
+        // Quest progress — fire and forget, non-blocking
+        if (userId && board?.id) {
+          incrementQuestProgress(userId, board.id, 'complete_cards').catch(() => {});
+          if (card.epic_id) {
+            incrementQuestProgress(userId, board.id, 'complete_epic_card').catch(() => {});
+          }
+        }
       }
     }
-  }, [moveCardToColumn, columns, cards, gam]);
+  }, [moveCardToColumn, columns, cards, epics, gam, userId, board]);
 
   // ─── Undoable card actions ────────────────────────────────────
 
@@ -276,6 +303,11 @@ function DashboardContent() {
 
     await editCard(cardId, updates);
 
+    // Quest progress: detect time logging (actual_hours updated to a value)
+    if ('actual_hours' in updates && updates.actual_hours && userId && board?.id) {
+      incrementQuestProgress(userId, board.id, 'log_time').catch(() => {});
+    }
+
     // Only show toast for significant edits (not real-time typing)
     const significantFields = ['priority', 'effort', 'epic_id', 'category_id'];
     const isSignificantEdit = Object.keys(updates).some(key => significantFields.includes(key));
@@ -296,7 +328,7 @@ function DashboardContent() {
 
       setActiveUndoToast({ description: `Edit "${card.title}"`, actionId: `edit_${cardId}_${Date.now()}` });
     }
-  }, [cards, editCard, undoRedo]);
+  }, [cards, editCard, undoRedo, userId, board]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -821,6 +853,13 @@ function DashboardContent() {
           levelColor={gam.levelColor}
           onClose={() => setShowBadgePanel(false)}
         />
+      )}
+
+      {/* Daily Quests HUD — bottom-left when in RPG mode */}
+      {isGamified && (
+        <div className="fixed bottom-6 left-6 z-[9998] w-64">
+          <DailyQuests userId={userId} boardId={board?.id || null} />
+        </div>
       )}
 
       {/* XP Toast notifications */}

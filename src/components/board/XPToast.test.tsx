@@ -3,6 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { XPToastStack } from './XPToast';
 import type { XPToast } from '@/hooks/useGamification';
 
+const base = { freezeUsed: false, freezeTokensRemaining: 0 };
+
 describe('XPToastStack', () => {
   const mockToasts: XPToast[] = [
     {
@@ -11,6 +13,7 @@ describe('XPToastStack', () => {
       action: 'card_complete',
       leveledUp: false,
       newBadges: [],
+      ...base,
     },
   ];
 
@@ -40,6 +43,7 @@ describe('XPToastStack', () => {
       newLevel: 13,
       newTitle: 'Specialist',
       newBadges: [],
+      ...base,
     }];
     render(<XPToastStack toasts={levelUpToast} onDismiss={onDismiss} />);
     expect(screen.getByText('Level Up! Lv.13 Specialist')).toBeInTheDocument();
@@ -52,6 +56,7 @@ describe('XPToastStack', () => {
       action: 'card_complete',
       leveledUp: false,
       newBadges: ['\u{1F5E1} First Blood'],
+      ...base,
     }];
     render(<XPToastStack toasts={badgeToast} onDismiss={onDismiss} />);
     expect(screen.getByText('\u{1F5E1} First Blood')).toBeInTheDocument();
@@ -65,11 +70,25 @@ describe('XPToastStack', () => {
 
   it('renders multiple toasts', () => {
     const multi: XPToast[] = [
-      { id: '1', xp: 25, action: 'card_complete', leveledUp: false, newBadges: [] },
-      { id: '2', xp: 5, action: 'card_create', leveledUp: false, newBadges: [] },
+      { id: '1', xp: 25, action: 'card_complete', leveledUp: false, newBadges: [], ...base },
+      { id: '2', xp: 5, action: 'card_create', leveledUp: false, newBadges: [], ...base },
     ];
     render(<XPToastStack toasts={multi} onDismiss={onDismiss} />);
     expect(screen.getByText('+25')).toBeInTheDocument();
     expect(screen.getByText('+5')).toBeInTheDocument();
+  });
+
+  it('shows freeze used notification', () => {
+    const freezeToast: XPToast[] = [{
+      id: '4',
+      xp: 15,
+      action: 'streak_daily',
+      leveledUp: false,
+      newBadges: [],
+      freezeUsed: true,
+      freezeTokensRemaining: 1,
+    }];
+    render(<XPToastStack toasts={freezeToast} onDismiss={onDismiss} />);
+    expect(screen.getByText(/Streak freeze used/)).toBeInTheDocument();
   });
 });

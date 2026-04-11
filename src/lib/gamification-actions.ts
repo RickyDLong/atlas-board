@@ -163,6 +163,8 @@ export interface XPAwardResult {
   newBadges: string[];
   streakUpdated: boolean;
   currentStreak: number;
+  freezeUsed: boolean;
+  freezeTokensRemaining: number;
 }
 
 export async function awardXP(
@@ -235,18 +237,27 @@ export async function awardXP(
     newBadges,
     streakUpdated: streakResult.updated,
     currentStreak: streakResult.currentStreak,
+    freezeUsed: streakResult.freezeUsed,
+    freezeTokensRemaining: streakResult.freezeTokensRemaining,
   };
 }
 
 // ─── Streak Management ──────────────────────────────────────
 
-async function updateStreak(userId: string, streak: UserStreak): Promise<{ updated: boolean; currentStreak: number }> {
+interface StreakUpdateResult {
+  updated: boolean;
+  currentStreak: number;
+  freezeUsed: boolean;
+  freezeTokensRemaining: number;
+}
+
+async function updateStreak(userId: string, streak: UserStreak): Promise<StreakUpdateResult> {
   const today = new Date().toISOString().slice(0, 10);
   const lastActive = streak.last_active_date;
 
   // Already active today
   if (lastActive === today) {
-    return { updated: false, currentStreak: streak.current_streak };
+    return { updated: false, currentStreak: streak.current_streak, freezeUsed: false, freezeTokensRemaining: streak.freeze_tokens };
   }
 
   const yesterday = new Date();
@@ -255,6 +266,7 @@ async function updateStreak(userId: string, streak: UserStreak): Promise<{ updat
 
   let newStreak = streak.current_streak;
   let freezeTokens = streak.freeze_tokens;
+  let freezeUsed = false;
 
   if (lastActive === yesterdayStr) {
     // Consecutive day — extend streak
@@ -263,8 +275,9 @@ async function updateStreak(userId: string, streak: UserStreak): Promise<{ updat
     // Missed at least one day
     const missedDays = Math.floor((new Date(today).getTime() - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24)) - 1;
     if (missedDays === 1 && freezeTokens > 0) {
-      // Use a freeze token
+      // Use a freeze token to save the streak
       freezeTokens -= 1;
+      freezeUsed = true;
       newStreak += 1;
     } else {
       // Reset streak
@@ -277,7 +290,7 @@ async function updateStreak(userId: string, streak: UserStreak): Promise<{ updat
 
   const longestStreak = Math.max(streak.longest_streak, newStreak);
 
-  // Award freeze tokens at milestones
+  // Award freeze tokens at milestones (cap at 3)
   if (newStreak === 7 && streak.current_streak < 7) freezeTokens = Math.min(freezeTokens + 1, 3);
   if (newStreak === 14 && streak.current_streak < 14) freezeTokens = Math.min(freezeTokens + 1, 3);
 
@@ -289,7 +302,7 @@ async function updateStreak(userId: string, streak: UserStreak): Promise<{ updat
     updated_at: new Date().toISOString(),
   }).eq('user_id', userId);
 
-  return { updated: true, currentStreak: newStreak };
+  return { updated: true, currentStreak: newStreak, freezeUsed, freezeTokensRemaining: freezeTokens };
 }
 
 // ─── Badge Engine ───────────────────────────────────────────

@@ -66,6 +66,11 @@ export function XPBar({
           <span className="text-[10px] font-bold font-mono" style={{ color: '#fb923c' }}>
             {streak.current_streak}
           </span>
+          {streak.freeze_tokens > 0 && (
+            <span className="text-[10px] font-mono text-[#22d3ee]" title={`${streak.freeze_tokens} streak freeze${streak.freeze_tokens > 1 ? 's' : ''} available`}>
+              {'\u2744\uFE0F'}{streak.freeze_tokens > 1 ? `\u00D7${streak.freeze_tokens}` : ''}
+            </span>
+          )}
         </div>
       )}
 
