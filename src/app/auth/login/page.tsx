@@ -52,13 +52,6 @@ export default function LoginPage() {
           filter: 'saturate(0.5) brightness(0.8)',
         }}
       />
-      {/* Radial vignette — fades the map hard at edges, keeps form readable */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          background: 'radial-gradient(ellipse 70% 70% at center, transparent 0%, #0a0a0f 72%)',
-        }}
-      />
       <div className="w-full max-w-sm relative z-10">
         <div className="text-center mb-8">
           <AtlasLogo size={48} className="rounded-xl mx-auto mb-4" />

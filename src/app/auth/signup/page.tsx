@@ -50,7 +50,6 @@ export default function SignupPage() {
     return (
       <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4 relative overflow-hidden">
         <div className="absolute inset-0 z-0" style={{ backgroundImage: "url('/characters/map-bg.png')", backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.09, filter: 'saturate(0.5) brightness(0.8)' }} />
-        <div className="absolute inset-0 z-0" style={{ background: 'radial-gradient(ellipse 70% 70% at center, transparent 0%, #0a0a0f 72%)' }} />
         <div className="w-full max-w-sm text-center relative z-10">
           <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl mx-auto mb-4">
             &#10003;
@@ -71,7 +70,6 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4 relative overflow-hidden">
       <div className="absolute inset-0 z-0" style={{ backgroundImage: "url('/characters/map-bg.png')", backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.09, filter: 'saturate(0.5) brightness(0.8)' }} />
-      <div className="absolute inset-0 z-0" style={{ background: 'radial-gradient(ellipse 70% 70% at center, transparent 0%, #0a0a0f 72%)' }} />
       <div className="w-full max-w-sm relative z-10">
         <div className="text-center mb-8">
           <AtlasLogo size={48} className="rounded-xl mx-auto mb-4" />
