@@ -1,6 +1,7 @@
 'use client';
 
 import type { UserLevel, UserStreak } from '@/types/database';
+import { CharacterSprite } from '@/components/board/CharacterSprite';
 
 interface XPBarProps {
   level: UserLevel | null;
@@ -28,8 +29,22 @@ export function XPBar({
   return (
     <button
       onClick={onClickStats}
-      className="flex items-center gap-3 px-3 py-1.5 rounded-lg border border-[#2a2a3a] bg-[#1a1a26] hover:bg-[#22222f] transition-all cursor-pointer group"
+      className="flex items-center gap-2.5 px-2 py-1 rounded-lg border border-[#2a2a3a] bg-[#1a1a26] hover:bg-[#22222f] transition-all cursor-pointer group overflow-hidden"
+      style={{ height: 40 }}
     >
+      {/* Character portrait — crops to head + torso */}
+      <div
+        className="rounded overflow-hidden flex-shrink-0"
+        style={{
+          width: 28,
+          height: 36,
+          border: `1px solid ${levelColor}44`,
+          background: '#0a0a0f',
+        }}
+      >
+        <CharacterSprite level={level.current_level} size="xs" />
+      </div>
+
       {/* Level badge */}
       <div className="flex items-center gap-1.5">
         <span
@@ -38,7 +53,7 @@ export function XPBar({
         >
           Lv.{level.current_level}
         </span>
-        <span className="text-[10px] font-semibold" style={{ color: levelColor }}>
+        <span className="text-[10px] font-semibold hidden sm:inline" style={{ color: levelColor }}>
           {level.title}
         </span>
       </div>
@@ -62,12 +77,15 @@ export function XPBar({
       {/* Streak */}
       {streak && streak.current_streak > 0 && (
         <div className="flex items-center gap-1">
-          <span className="text-xs">{streak.current_streak >= 7 ? '\u{1F525}' : '\u{1F4A5}'}</span>
+          <span className="text-xs">{streak.current_streak >= 7 ? '🔥' : '💥'}</span>
           <span className="text-[10px] font-bold font-mono" style={{ color: '#fb923c' }}>
             {streak.current_streak}
           </span>
           {streak.freeze_tokens > 0 && (
-            <span className="text-[10px] font-mono text-[#22d3ee]" title={`${streak.freeze_tokens} streak freeze${streak.freeze_tokens > 1 ? 's' : ''} available`}>
+            <span
+              className="text-[10px] font-mono text-[#22d3ee]"
+              title={`${streak.freeze_tokens} streak freeze${streak.freeze_tokens > 1 ? 's' : ''} available`}
+            >
               {'\u2744\uFE0F'}{streak.freeze_tokens > 1 ? `\u00D7${streak.freeze_tokens}` : ''}
             </span>
           )}
@@ -77,7 +95,7 @@ export function XPBar({
       {/* Badge count */}
       {badgeCount > 0 && (
         <div className="flex items-center gap-1">
-          <span className="text-xs">{'\u{1F3C6}'}</span>
+          <span className="text-xs">🏆</span>
           <span className="text-[10px] font-bold font-mono text-[#fbbf24]">
             {badgeCount}
           </span>

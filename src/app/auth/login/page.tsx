@@ -40,8 +40,26 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Map world — low opacity, desaturated to blend with dark palette */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: "url('/characters/map-bg.png')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: 0.09,
+          filter: 'saturate(0.5) brightness(0.8)',
+        }}
+      />
+      {/* Radial vignette — fades the map hard at edges, keeps form readable */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          background: 'radial-gradient(ellipse 70% 70% at center, transparent 0%, #0a0a0f 72%)',
+        }}
+      />
+      <div className="w-full max-w-sm relative z-10">
         <div className="text-center mb-8">
           <AtlasLogo size={48} className="rounded-xl mx-auto mb-4" />
           <h1 className="text-2xl font-semibold text-white tracking-tight">Atlas</h1>

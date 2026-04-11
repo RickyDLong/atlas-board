@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import type { UserBadge, UserLevel, UserStreak, BadgeTier } from '@/types/database';
 import { BADGE_DEFINITIONS } from '@/types/database';
+import { CharacterSprite } from '@/components/board/CharacterSprite';
+import { getCharacterTier } from '@/lib/character-sprite';
 
 interface BadgePanelProps {
   badges: UserBadge[];
@@ -42,25 +44,50 @@ export function BadgePanel({ badges, level, streak, levelProgress, xpInCurrentLe
         {/* Player card */}
         {level && (
           <div className="px-5 pt-4 pb-3">
-            <div className="rounded-xl border border-[#2a2a3a] bg-[#1a1a26] p-4">
-              <div className="flex items-center gap-4 mb-3">
-                {/* Level circle */}
+            <div className="rounded-xl border border-[#2a2a3a] bg-[#1a1a26] overflow-hidden">
+              {/* Character banner */}
+              <div
+                className="relative flex items-end gap-5 px-5 pt-4 pb-3"
+                style={{
+                  background: `linear-gradient(135deg, #0e0e1a 0%, ${levelColor}0a 100%)`,
+                  borderBottom: '1px solid #1e1e2e',
+                }}
+              >
+                {/* Glow base under character */}
                 <div
-                  className="w-14 h-14 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                  style={{ borderColor: levelColor, background: levelColor + '11' }}
+                  className="absolute bottom-0 left-5"
+                  style={{
+                    width: 80,
+                    height: 24,
+                    background: `radial-gradient(ellipse, ${levelColor}25 0%, transparent 70%)`,
+                    filter: 'blur(4px)',
+                  }}
+                />
+
+                {/* Character portrait */}
+                <div
+                  className="relative flex-shrink-0 rounded overflow-hidden"
+                  style={{ border: `1px solid ${levelColor}44` }}
                 >
-                  <span className="text-xl font-bold font-mono" style={{ color: levelColor }}>
-                    {level.current_level}
-                  </span>
+                  <CharacterSprite level={level.current_level} size="md" />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-[15px]" style={{ color: levelColor }}>{level.title}</span>
-                    <span className="text-xs text-[#555568] font-mono">Lv.{level.current_level}</span>
+
+                {/* Tier + stats column */}
+                <div className="flex-1 pb-1">
+                  <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-[#555568] mb-0.5">
+                    {getCharacterTier(level.current_level).tierName}
+                  </div>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-3xl font-bold font-mono" style={{ color: levelColor }}>
+                      {level.current_level}
+                    </span>
+                    <span className="font-semibold text-base" style={{ color: levelColor }}>
+                      {level.title}
+                    </span>
                   </div>
                   {/* XP bar */}
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 rounded-full bg-[#2a2a3a] overflow-hidden">
+                    <div className="flex-1 h-1.5 rounded-full bg-[#2a2a3a] overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all duration-700"
                         style={{
@@ -70,13 +97,14 @@ export function BadgePanel({ badges, level, streak, levelProgress, xpInCurrentLe
                       />
                     </div>
                     <span className="text-[10px] font-mono text-[#555568]">
-                      {xpInCurrentLevel}/{xpNeededForNext}
+                      {xpInCurrentLevel}/{xpNeededForNext} XP
                     </span>
                   </div>
                 </div>
               </div>
 
               {/* Stats row */}
+              <div className="p-4">
               <div className="grid grid-cols-4 gap-3">
                 <div className="text-center">
                   <div className="text-lg font-bold font-mono text-[#4a9eff]">{level.current_xp.toLocaleString()}</div>
@@ -99,13 +127,14 @@ export function BadgePanel({ badges, level, streak, levelProgress, xpInCurrentLe
               {/* Freeze tokens */}
               {streak && streak.freeze_tokens > 0 && (
                 <div className="mt-3 flex items-center gap-1.5">
-                  <span className="text-xs">{'\u{2744}'}</span>
+                  <span className="text-xs">❄️</span>
                   <span className="text-[10px] text-[#22d3ee] font-semibold">
                     {streak.freeze_tokens} streak freeze{streak.freeze_tokens > 1 ? 's' : ''} available
                   </span>
                 </div>
               )}
             </div>
+          </div>
           </div>
         )}
 
