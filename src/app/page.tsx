@@ -65,7 +65,7 @@ export default async function Home() {
             </Link>
             <Link
               href="/auth/login"
-              className="px-8 py-3 border border-[#2a2a3a] text-[#e8e8f0] font-medium rounded-lg hover:bg-[#12121a] hover:border-[#3a3a4a] transition-all text-sm"
+              className="px-8 py-3 border border-[#2a2a3a] text-[#e8e8f0] font-medium rounded-lg hover:bg-[#12121a] hover:border-[#2a2a3a] transition-all text-sm"
             >
               Sign in
             </Link>
@@ -79,7 +79,7 @@ export default async function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* RPG Mode Card */}
-            <div className="relative rounded-2xl border border-purple-500/30 bg-gradient-to-b from-purple-500/[0.08] to-[#12121a] p-6 overflow-hidden">
+            <div className="relative rounded-2xl border border-purple-500/30 bg-gradient-to-b from-purple-500/5 to-[#12121a] p-6 overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-purple-500/60 to-transparent" />
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-2xl">&#x2694;&#xFE0F;</span>
@@ -91,8 +91,8 @@ export default async function Home() {
               {/* Mini board preview */}
               <div className="flex gap-2">
                 {['Quest Log', 'In Battle', 'Conquered'].map((col) => (
-                  <div key={col} className="flex-1 rounded-lg bg-[#0a0a0f]/60 border border-[#2a2a3a]/50 p-2">
-                    <div className="text-[10px] font-medium text-purple-400/80 mb-1.5 font-mono">{col}</div>
+                  <div key={col} className="flex-1 rounded-lg bg-[#0a0a0f]/60 border border-[#2a2a3a] p-2">
+                    <div className="text-xs font-medium text-purple-400/80 mb-1.5 font-mono">{col}</div>
                     <div className="space-y-1.5">
                       <div className="h-5 rounded bg-purple-500/10 border border-purple-500/20" />
                       <div className="h-5 rounded bg-purple-500/10 border border-purple-500/20" />
@@ -102,16 +102,16 @@ export default async function Home() {
               </div>
               {/* XP bar preview */}
               <div className="mt-4 flex items-center gap-2">
-                <span className="text-[10px] font-mono text-purple-400">Lv. 4 Pathfinder</span>
+                <span className="text-xs font-mono text-purple-400">Lv. 4 Pathfinder</span>
                 <div className="flex-1 h-1.5 bg-[#0a0a0f] rounded-full overflow-hidden">
                   <div className="h-full w-3/5 bg-gradient-to-r from-purple-500 to-blue-400 rounded-full" />
                 </div>
-                <span className="text-[10px] font-mono text-[#555568]">420 XP</span>
+                <span className="text-xs font-mono text-[#555568]">420 XP</span>
               </div>
             </div>
 
             {/* Professional Mode Card */}
-            <div className="relative rounded-2xl border border-blue-500/30 bg-gradient-to-b from-blue-500/[0.08] to-[#12121a] p-6 overflow-hidden">
+            <div className="relative rounded-2xl border border-blue-500/30 bg-gradient-to-b from-blue-500/5 to-[#12121a] p-6 overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-blue-500/60 to-transparent" />
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-2xl">&#x1F4CB;</span>
@@ -123,8 +123,8 @@ export default async function Home() {
               {/* Mini board preview */}
               <div className="flex gap-2">
                 {['Backlog', 'In Progress', 'Done'].map((col) => (
-                  <div key={col} className="flex-1 rounded-lg bg-[#0a0a0f]/60 border border-[#2a2a3a]/50 p-2">
-                    <div className="text-[10px] font-medium text-blue-400/80 mb-1.5 font-mono">{col}</div>
+                  <div key={col} className="flex-1 rounded-lg bg-[#0a0a0f]/60 border border-[#2a2a3a] p-2">
+                    <div className="text-xs font-medium text-blue-400/80 mb-1.5 font-mono">{col}</div>
                     <div className="space-y-1.5">
                       <div className="h-5 rounded bg-blue-500/10 border border-blue-500/20" />
                       <div className="h-5 rounded bg-blue-500/10 border border-blue-500/20" />
@@ -134,11 +134,11 @@ export default async function Home() {
               </div>
               {/* Clean status bar preview */}
               <div className="mt-4 flex items-center gap-3">
-                <span className="text-[10px] font-mono text-blue-400">Active 12</span>
-                <span className="text-[10px] text-[#555568]">&middot;</span>
-                <span className="text-[10px] font-mono text-[#555568]">Done 36</span>
-                <span className="text-[10px] text-[#555568]">&middot;</span>
-                <span className="text-[10px] font-mono text-[#555568]">Cycle Avg 2.4d</span>
+                <span className="text-xs font-mono text-blue-400">Active 12</span>
+                <span className="text-xs text-[#555568]">&middot;</span>
+                <span className="text-xs font-mono text-[#555568]">Done 36</span>
+                <span className="text-xs text-[#555568]">&middot;</span>
+                <span className="text-xs font-mono text-[#555568]">Cycle Avg 2.4d</span>
               </div>
             </div>
           </div>
@@ -161,7 +161,7 @@ export default async function Home() {
               { title: 'Card Relationships', desc: 'Link blockers, duplicates, and related cards.' },
               { title: 'Recurring Tasks', desc: 'Auto-create cards on a schedule. Never forget standups.' },
             ].map((f) => (
-              <div key={f.title} className="text-left p-4 rounded-xl border border-[#1e1e2e] bg-[#12121a]/50">
+              <div key={f.title} className="text-left p-4 rounded-xl border border-[#1e1e2e] bg-[#12121a]/50 hover:border-[#2a2a3a] transition-colors">
                 <div className="text-white font-medium text-sm mb-1">{f.title}</div>
                 <div className="text-[#555568] text-xs leading-relaxed">{f.desc}</div>
               </div>
@@ -171,7 +171,7 @@ export default async function Home() {
 
         {/* Final CTA */}
         <section className="w-full max-w-2xl text-center pb-20">
-          <h2 className="text-2xl font-bold text-white mb-3">Ready to get organized?</h2>
+          <h2 className="text-xl font-semibold text-white mb-3">Ready to get organized?</h2>
           <p className="text-sm text-[#8888a0] mb-8">Free to use. Set up in under a minute.</p>
           <Link
             href="/auth/signup"

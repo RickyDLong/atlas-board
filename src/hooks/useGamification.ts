@@ -65,10 +65,10 @@ export function useGamification(userId: string | null, boardId: string | null, s
     if (!userId) return;
     const supabase = createClient();
 
+    // Note: postgres_changes always delivers to all subscribers including self.
+    // muteRealtimeRef prevents double-processing after local mutations.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const channel: any = supabase.channel(`gamification-${userId}`, {
-      config: { broadcast: { self: false } },
-    });
+    const channel: any = supabase.channel(`gamification-${userId}`);
 
     // user_levels — UPDATE (upsert always updates after initial insert)
     channel.on(
@@ -134,72 +134,51 @@ export function useGamification(userId: string | null, boardId: string | null, s
     setXpToasts(prev => [...prev, toast]);
   }, []);
 
+  // Shared post-award state update: mute realtime, update level/streak/badges, show toast
+  const handleAwardResult = useCallback((result: gamification.XPAwardResult) => {
+    muteRealtime();
+    setLevel(prev => prev ? {
+      ...prev,
+      current_xp: result.newTotalXP,
+      current_level: result.newLevel,
+      title: result.newTitle,
+    } : prev);
+    if (result.streakUpdated) {
+      setStreak(prev => prev ? {
+        ...prev,
+        current_streak: result.currentStreak,
+        longest_streak: Math.max(prev.longest_streak, result.currentStreak),
+        last_active_date: new Date().toISOString().slice(0, 10),
+      } : prev);
+    }
+    if (result.newBadges.length > 0 && userId) {
+      gamification.getUserBadges(userId).then(setBadges).catch(() => {});
+    }
+    if (showToasts) addToast(result);
+  }, [userId, muteRealtime, addToast, showToasts]);
+
   // Award XP and update local state
   const awardXP = useCallback(async (action: XPAction, metadata: Record<string, unknown> = {}) => {
     if (!userId || !boardId) return null;
     try {
       const result = await gamification.awardXP(userId, boardId, action, metadata);
-      // Mute realtime so this tab doesn't double-process its own DB write
-      muteRealtime();
-      // Update local state
-      setLevel(prev => prev ? {
-        ...prev,
-        current_xp: result.newTotalXP,
-        current_level: result.newLevel,
-        title: result.newTitle,
-      } : prev);
-      if (result.streakUpdated) {
-        setStreak(prev => prev ? {
-          ...prev,
-          current_streak: result.currentStreak,
-          longest_streak: Math.max(prev.longest_streak, result.currentStreak),
-          last_active_date: new Date().toISOString().slice(0, 10),
-        } : prev);
-      }
-      if (result.newBadges.length > 0) {
-        // Reload badges to get fresh data
-        const fresh = await gamification.getUserBadges(userId);
-        setBadges(fresh);
-      }
-      if (showToasts) addToast(result);
+      handleAwardResult(result);
       return result;
     } catch {
       return null;
     }
-  }, [userId, boardId, addToast, showToasts, muteRealtime]);
+  }, [userId, boardId, handleAwardResult]);
 
   // Convenience: award XP for completing a card
   const awardCardCompletion = useCallback(async (card: Card) => {
     if (!userId || !boardId) return;
     try {
       const result = await gamification.awardCardCompletionXP(userId, boardId, card);
-      if (result) {
-        // Mute realtime so this tab doesn't double-process its own DB write
-        muteRealtime();
-        setLevel(prev => prev ? {
-          ...prev,
-          current_xp: result.newTotalXP,
-          current_level: result.newLevel,
-          title: result.newTitle,
-        } : prev);
-        if (result.streakUpdated) {
-          setStreak(prev => prev ? {
-            ...prev,
-            current_streak: result.currentStreak,
-            longest_streak: Math.max(prev.longest_streak, result.currentStreak),
-            last_active_date: new Date().toISOString().slice(0, 10),
-          } : prev);
-        }
-        if (result.newBadges.length > 0) {
-          const fresh = await gamification.getUserBadges(userId);
-          setBadges(fresh);
-        }
-        if (showToasts) addToast(result);
-      }
+      if (result) handleAwardResult(result);
     } catch {
       // Non-blocking
     }
-  }, [userId, boardId, addToast, showToasts, muteRealtime]);
+  }, [userId, boardId, handleAwardResult]);
 
   const dismissToast = useCallback((id: string) => {
     setXpToasts(prev => prev.filter(t => t.id !== id));
