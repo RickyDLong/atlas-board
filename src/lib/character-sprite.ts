@@ -60,12 +60,18 @@ export interface SpriteStyle {
   backgroundRepeat: string;
 }
 
+// Labels ("LEVEL 1", "LEVEL 2" …) sit at the TOP of each cell in this sheet.
+// This ratio (label height / cell height) lets us skip past them.
+// Measured: ~70px label in 600px cell = ~11.7%
+const LABEL_TOP_RATIO = 0.117;
+
 /**
  * Returns the CSS values needed to window into the correct character cell.
  *
  * displayW    — desired output width in px
- * displayH    — desired output height in px (controls how much of the cell is visible;
- *               set < (displayW * 2.5) to crop out the text label at the bottom)
+ * displayH    — desired output height in px; the container clips at this height
+ *               so set it < (scaledCellH * (1 - LABEL_TOP_RATIO)) to avoid
+ *               showing the ground area at the bottom
  * level       — current player level
  */
 export function getSpriteStyle(displayW: number, displayH: number, level: number): SpriteStyle {
@@ -75,8 +81,12 @@ export function getSpriteStyle(displayW: number, displayH: number, level: number
   // Cell aspect ratio: CELL_W:CELL_H = 240:600 = 1:2.5
   const scaledCellH = displayW * (CELL_H / CELL_W); // displayW * 2.5
 
-  const bgW = displayW * 5;           // full sheet scaled width  (5 cols)
-  const bgH = scaledCellH * 2;        // full sheet scaled height (2 rows)
+  const bgW = displayW * 5;   // full sheet scaled width  (5 cols)
+  const bgH = scaledCellH * 2; // full sheet scaled height (2 rows)
+
+  // Shift background UP by the label height so the label scrolls above
+  // the container's visible area (container has overflow: hidden)
+  const labelOffset = scaledCellH * LABEL_TOP_RATIO;
 
   return {
     width: displayW,
@@ -84,7 +94,7 @@ export function getSpriteStyle(displayW: number, displayH: number, level: number
     fullCellH: scaledCellH,
     backgroundImage: `url('${SPRITE_SHEET}')`,
     backgroundSize: `${bgW}px ${bgH}px`,
-    backgroundPosition: `${-(col * displayW)}px ${-(row * scaledCellH)}px`,
+    backgroundPosition: `${-(col * displayW)}px ${-(row * scaledCellH) - labelOffset}px`,
     backgroundRepeat: 'no-repeat',
   };
 }

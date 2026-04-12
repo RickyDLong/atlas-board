@@ -4,7 +4,6 @@ import { useState } from 'react';
 import type { UserBadge, UserLevel, UserStreak, BadgeTier } from '@/types/database';
 import { BADGE_DEFINITIONS } from '@/types/database';
 import { CharacterSprite } from '@/components/board/CharacterSprite';
-import { getCharacterTier } from '@/lib/character-sprite';
 
 interface BadgePanelProps {
   badges: UserBadge[];
@@ -74,9 +73,6 @@ export function BadgePanel({ badges, level, streak, levelProgress, xpInCurrentLe
 
                 {/* Tier + stats column */}
                 <div className="flex-1 pb-1">
-                  <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-[#555568] mb-0.5">
-                    {getCharacterTier(level.current_level).tierName}
-                  </div>
                   <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-3xl font-bold font-mono" style={{ color: levelColor }}>
                       {level.current_level}
