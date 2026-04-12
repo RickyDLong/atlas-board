@@ -223,7 +223,10 @@ export async function awardXP(
     totalXP: newTotalXP,
     level: newLevel,
     streak: streakResult.currentStreak,
-    metadata,
+    metadata: {
+      ...metadata,
+      freeze_used: streakResult.freezeUsed,
+    },
   });
 
   return {
@@ -330,68 +333,245 @@ async function checkAndAwardBadges(
       user_id: userId,
       badge_key: key,
     });
+    existingKeys.add(key); // keep local set in sync for meta-badge counts
     newBadges.push(key);
   };
 
-  // First Blood: complete your first card
-  if (action === 'card_complete' || action === 'card_complete_high' || action === 'card_complete_critical') {
-    await tryAward('first_blood');
-  }
+  const isCardComplete = action === 'card_complete' || action === 'card_complete_high' || action === 'card_complete_critical';
 
-  // Hat Trick: 3 completions in one day
-  if (action === 'card_complete' || action === 'card_complete_high' || action === 'card_complete_critical') {
+  // ─── Card Completion Checks ──────────────────────────────────
+  if (isCardComplete) {
+    // First Blood
+    await tryAward('first_blood');
+
     const today = new Date().toISOString().slice(0, 10);
-    const { count } = await supabase
+
+    // Count all completions (shared query, reused below)
+    const { count: totalCompletions } = await supabase
+      .from('user_xp_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .in('action', ['card_complete', 'card_complete_high', 'card_complete_critical']);
+
+    const total = totalCompletions || 0;
+
+    // Volume milestones
+    if (total >= 10) await tryAward('ten_down');
+    if (total >= 25) await tryAward('quarter_century');
+    if (total >= 50) await tryAward('half_century');
+    if (total >= 100) await tryAward('century_club');
+    if (total >= 200) await tryAward('double_century');
+    if (total >= 500) await tryAward('five_hundred');
+
+    // Same-day completions
+    const { count: todayCount } = await supabase
       .from('user_xp_events')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .in('action', ['card_complete', 'card_complete_high', 'card_complete_critical'])
       .gte('created_at', today + 'T00:00:00')
       .lte('created_at', today + 'T23:59:59');
-    if ((count || 0) >= 3) await tryAward('hat_trick');
-  }
 
-  // Streak badges
-  if (ctx.streak >= 7) await tryAward('streak_starter');
-  if (ctx.streak >= 30) await tryAward('monthly_machine');
-  if (ctx.streak >= 90) await tryAward('iron_will');
+    const dayTotal = todayCount || 0;
+    if (dayTotal >= 3) await tryAward('hat_trick');
+    if (dayTotal >= 5) await tryAward('daily_double');
+    if (dayTotal >= 10) await tryAward('berserker');
+    if (dayTotal >= 20) await tryAward('unstoppable');
 
-  // Level badges
-  if (ctx.level >= 50) await tryAward('atlas_ascendant');
-
-  // Epic complete
-  if (action === 'epic_complete') await tryAward('epic_closer');
-
-  // Archive batch
-  if (action === 'archive_batch') {
-    const { count } = await supabase
+    // Critical-priority completions
+    const { count: critCount } = await supabase
       .from('user_xp_events')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
-      .eq('action', 'archive_batch');
-    // Each archive_batch event is for 10 cards, so 5 events = 50 cards
-    if ((count || 0) >= 5) await tryAward('board_cleaner');
-  }
+      .eq('action', 'card_complete_critical');
 
-  // Century Club: 100 total completions
-  if (action === 'card_complete' || action === 'card_complete_high' || action === 'card_complete_critical') {
-    const { count } = await supabase
+    const crit = critCount || 0;
+    if (crit >= 10) await tryAward('crisis_manager');
+    if (crit >= 25) await tryAward('fire_suppressor');
+
+    // High-or-critical completions
+    const { count: highCount } = await supabase
       .from('user_xp_events')
       .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .in('action', ['card_complete_high', 'card_complete_critical']);
+
+    if ((highCount || 0) >= 50) await tryAward('high_achiever');
+
+    // Time-of-day badges
+    const { data: allCompletionTimes } = await supabase
+      .from('user_xp_events')
+      .select('created_at')
       .eq('user_id', userId)
       .in('action', ['card_complete', 'card_complete_high', 'card_complete_critical']);
-    if ((count || 0) >= 100) await tryAward('century_club');
+
+    const nightCount = (allCompletionTimes || []).filter(e => {
+      const h = new Date(e.created_at).getHours();
+      return h >= 0 && h < 4;
+    }).length;
+    const morningCount = (allCompletionTimes || []).filter(e => {
+      const h = new Date(e.created_at).getHours();
+      return h >= 5 && h < 8;
+    }).length;
+    if (nightCount >= 10) await tryAward('night_owl');
+    if (morningCount >= 10) await tryAward('early_bird');
+
+    // Subtask thoroughness
+    if (ctx.metadata.all_subtasks_complete === true) {
+      await tryAward('thorough');
+
+      const { count: thoroughCount } = await supabase
+        .from('user_xp_events')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .in('action', ['card_complete', 'card_complete_high', 'card_complete_critical'])
+        .filter('metadata->>all_subtasks_complete', 'eq', 'true');
+
+      if ((thoroughCount || 0) >= 25) await tryAward('perfectionist');
+    }
   }
 
-  // Speed Demon: check metadata for early completions count
+  // ─── Early Completion Checks ─────────────────────────────────
   if (action === 'card_early') {
-    const { count } = await supabase
+    const { count: earlyCount } = await supabase
       .from('user_xp_events')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('action', 'card_early');
-    if ((count || 0) >= 5) await tryAward('speed_demon');
+
+    const early = earlyCount || 0;
+    if (early >= 1) await tryAward('first_spark');
+    if (early >= 5) await tryAward('speed_demon');
+    if (early >= 10) await tryAward('ember');
+    if (early >= 25) await tryAward('blaze');
+    if (early >= 50) await tryAward('inferno');
+    if (early >= 100) await tryAward('conflagration');
   }
+
+  // ─── On-Time Delivery Checks ─────────────────────────────────
+  if (action === 'card_on_time') {
+    const { count: onTimeCount } = await supabase
+      .from('user_xp_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('action', 'card_on_time');
+
+    const onTime = onTimeCount || 0;
+    if (onTime >= 25) await tryAward('ahead_of_curve');
+    if (onTime >= 50) await tryAward('clockwork');
+    if (onTime >= 100) await tryAward('timekeeper');
+  }
+
+  // ─── Column Clear Checks ─────────────────────────────────────
+  if (action === 'column_clear') {
+    const { count: clearCount } = await supabase
+      .from('user_xp_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('action', 'column_clear');
+
+    const clears = clearCount || 0;
+    if (clears >= 5) await tryAward('clean_sweep');
+    if (clears >= 10) await tryAward('scorched_earth');
+    if (clears >= 25) await tryAward('purge_master');
+  }
+
+  // ─── Archive Checks ──────────────────────────────────────────
+  if (action === 'archive_batch') {
+    const { count: archiveCount } = await supabase
+      .from('user_xp_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('action', 'archive_batch');
+
+    // Each archive_batch ≈ 10 cards archived
+    const batches = archiveCount || 0;
+    if (batches >= 3) await tryAward('archivist');     // ~25 cards
+    if (batches >= 5) await tryAward('board_cleaner'); // ~50 cards
+    if (batches >= 10) await tryAward('deep_archive'); // ~100 cards
+  }
+
+  // ─── Card Creation Checks ────────────────────────────────────
+  if (action === 'card_create') {
+    const { count: createCount } = await supabase
+      .from('user_xp_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('action', 'card_create');
+
+    const created = createCount || 0;
+    if (created >= 50) await tryAward('world_builder');
+    if (created >= 200) await tryAward('grand_creator');
+  }
+
+  // ─── Epic Complete Checks ────────────────────────────────────
+  if (action === 'epic_complete') {
+    await tryAward('epic_closer');
+
+    const { count: epicCount } = await supabase
+      .from('user_xp_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('action', 'epic_complete');
+
+    const epics = epicCount || 0;
+    if (epics >= 3) await tryAward('epic_hunter');
+    if (epics >= 10) await tryAward('world_conqueror');
+    if (epics >= 25) await tryAward('grand_architect');
+  }
+
+  // ─── Streak Badges ───────────────────────────────────────────
+  if (ctx.streak >= 7) await tryAward('streak_starter');
+  if (ctx.streak >= 14) await tryAward('fortnight');
+  if (ctx.streak >= 21) await tryAward('steadfast');
+  if (ctx.streak >= 30) await tryAward('monthly_machine');
+  if (ctx.streak >= 90) await tryAward('iron_will');
+  if (ctx.streak >= 180) await tryAward('half_year');
+  if (ctx.streak >= 365) await tryAward('eternal_flame');
+
+  // ─── Level Badges ────────────────────────────────────────────
+  if (ctx.level >= 5) await tryAward('level_five');
+  if (ctx.level >= 10) await tryAward('level_ten');
+  if (ctx.level >= 20) await tryAward('level_twenty');
+  if (ctx.level >= 30) await tryAward('level_thirty');
+  if (ctx.level >= 40) await tryAward('level_forty');
+  if (ctx.level >= 50) await tryAward('atlas_ascendant');
+
+  // ─── Streak Freeze Badge ─────────────────────────────────────
+  if (ctx.metadata.freeze_used === true) {
+    await tryAward('ice_shield');
+  }
+
+  // ─── Daily Quest Badges ──────────────────────────────────────
+  if (isCardComplete || action === 'card_create') {
+    const { count: questTotal } = await supabase
+      .from('daily_quests')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('completed', true);
+
+    const quests = questTotal || 0;
+    if (quests >= 1) await tryAward('daily_duty');
+    if (quests >= 30) await tryAward('devoted');
+    if (quests >= 100) await tryAward('quest_master');
+
+    const today = new Date().toISOString().slice(0, 10);
+    const { count: todayQuestsDone } = await supabase
+      .from('daily_quests')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('date', today)
+      .eq('completed', true);
+
+    if ((todayQuestsDone || 0) >= 3) await tryAward('triple_threat');
+  }
+
+  // ─── Meta Badge (badge collection) ──────────────────────────
+  // Run last so newly awarded badges are counted
+  const totalBadges = existingKeys.size;
+  if (totalBadges >= 10) await tryAward('decorated');
+  if (totalBadges >= 20) await tryAward('trophy_room');
+  if (totalBadges >= 30) await tryAward('completionist');
 
   return newBadges;
 }
@@ -402,6 +582,7 @@ export async function awardCardCompletionXP(
   userId: string,
   boardId: string,
   card: Card,
+  extraMetadata: Record<string, unknown> = {},
 ): Promise<XPAwardResult | null> {
   // Only award when moving TO done column
   // Determine the right action based on priority
@@ -413,6 +594,7 @@ export async function awardCardCompletionXP(
     card_id: card.id,
     card_title: card.title,
     priority: card.priority,
+    ...extraMetadata,
   });
 
   // Check on-time/early bonuses

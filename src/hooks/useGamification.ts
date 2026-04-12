@@ -175,10 +175,10 @@ export function useGamification(userId: string | null, boardId: string | null, s
   }, [userId, boardId, handleAwardResult]);
 
   // Convenience: award XP for completing a card
-  const awardCardCompletion = useCallback(async (card: Card) => {
+  const awardCardCompletion = useCallback(async (card: Card, extraMetadata: Record<string, unknown> = {}) => {
     if (!userId || !boardId) return;
     try {
-      const result = await gamification.awardCardCompletionXP(userId, boardId, card);
+      const result = await gamification.awardCardCompletionXP(userId, boardId, card, extraMetadata);
       if (result) handleAwardResult(result);
     } catch {
       // Non-blocking

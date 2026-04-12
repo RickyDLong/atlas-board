@@ -1,49 +1,76 @@
 // ─── Character Sprite Utility ────────────────────────────────────────────────
-// Sprite sheet: public/characters/progression.png
-// Layout: 5 columns × 2 rows, each cell = 240×600px (total 1200×1200)
-// Source: "Character progression 2" — dark stone background, max-level blue sword
+// Sprite sheet: public/characters/progression-x50.png
+// Layout: 10 columns × 5 rows, each cell = 120×240px (total 1200×1200)
+// No text labels — one unique character per game level (1-50).
+//
+// Row 4 exceptions (user-specified):
+//   col 5  = one-wing helmet character → skipped; levels 45 & 46 both use col 4
+//   col 8  = female character          → skipped; levels 48 & 49 both use col 7
 
-export const SPRITE_SHEET = '/characters/progression.png';
+export const SPRITE_SHEET = '/characters/progression-x50.png';
 
-// Each cell in the 1200×1200 sheet
-export const CELL_W = 240;  // 1200 / 5
-export const CELL_H = 600;  // 1200 / 2
+export const COLS = 10;
+export const ROWS = 5;
+export const CELL_W = 120; // 1200 / 10
+export const CELL_H = 240; // 1200 / 5
 
-// 9 character tiers mapped across 50 game levels
-// Row 2 has 4 chars (levels 7–10 MAX) — the 5th slot is empty and never referenced
-export const CHARACTER_TIERS = [
-  { minLevel: 1,  col: 0, row: 0, tierName: 'Wanderer'  },
-  { minLevel: 6,  col: 1, row: 0, tierName: 'Squire'    },
-  { minLevel: 12, col: 2, row: 0, tierName: 'Soldier'   },
-  { minLevel: 18, col: 3, row: 0, tierName: 'Knight'    },
-  { minLevel: 24, col: 4, row: 0, tierName: 'Paladin'   },
-  { minLevel: 30, col: 0, row: 1, tierName: 'Champion'  },
-  { minLevel: 36, col: 1, row: 1, tierName: 'Crusader'  },
-  { minLevel: 41, col: 2, row: 1, tierName: 'Warlord'   },
-  { minLevel: 46, col: 3, row: 1, tierName: 'Legend'    },
-] as const;
+// ─── Level → Cell Mapping ────────────────────────────────────────────────────
 
-export interface CharacterTier {
-  minLevel: number;
+export interface CharacterCell {
   col: number;
   row: number;
-  tierName: string;
 }
 
-export function getCharacterTier(level: number): CharacterTier {
-  // Walk backwards to find the highest tier the player has unlocked
-  for (let i = CHARACTER_TIERS.length - 1; i >= 0; i--) {
-    if (level >= CHARACTER_TIERS[i].minLevel) {
-      return CHARACTER_TIERS[i];
-    }
-  }
-  return CHARACTER_TIERS[0];
+/**
+ * Explicit level-to-cell table (index 0 = level 1).
+ * Levels 1-40: straight sequential mapping across rows 0-3.
+ * Levels 41-50: manual mapping that skips col 5 (one-wing) and col 8 (female).
+ */
+const LEVEL_CELL_MAP: CharacterCell[] = [
+  // Rows 0–3: sequential (levels 1–40)
+  ...Array.from({ length: 40 }, (_, i): CharacterCell => ({
+    col: i % COLS,
+    row: Math.floor(i / COLS),
+  })),
+  // Row 4: levels 41–50 with skipped cells
+  { col: 0, row: 4 }, // level 41
+  { col: 1, row: 4 }, // level 42
+  { col: 2, row: 4 }, // level 43
+  { col: 3, row: 4 }, // level 44
+  { col: 4, row: 4 }, // level 45
+  { col: 4, row: 4 }, // level 46  ← col 5 (one-wing) skipped; use col 4
+  { col: 6, row: 4 }, // level 47
+  { col: 7, row: 4 }, // level 48
+  { col: 7, row: 4 }, // level 49  ← col 8 (female) skipped; use col 7
+  { col: 9, row: 4 }, // level 50
+];
+
+/** Returns the sprite cell for a given level (clamped 1-50). */
+export function getCharacterForLevel(level: number): CharacterCell {
+  const idx = Math.max(0, Math.min(49, level - 1));
+  return LEVEL_CELL_MAP[idx];
 }
 
-/** Returns true when crossing from oldLevel to newLevel unlocks a new character appearance */
+// ─── Tier Names ──────────────────────────────────────────────────────────────
+// Aligns with LEVEL_TITLES so the name shown in level-up toasts is consistent.
+
+export function getCharacterTierName(level: number): string {
+  if (level >= 50) return 'Mythic Titan';
+  if (level >= 40) return 'Dragon Slayer';
+  if (level >= 30) return 'Shadow Monarch';
+  if (level >= 20) return 'Runecaster';
+  if (level >= 10) return 'Blade Adept';
+  if (level >= 5)  return 'Squire';
+  return 'Wanderer';
+}
+
+/**
+ * Returns true when levelling from oldLevel to newLevel actually changes the
+ * displayed sprite cell (accounts for the two skipped cells in row 4).
+ */
 export function isNewCharacterTier(oldLevel: number, newLevel: number): boolean {
-  const a = getCharacterTier(oldLevel);
-  const b = getCharacterTier(newLevel);
+  const a = getCharacterForLevel(Math.max(1, oldLevel));
+  const b = getCharacterForLevel(newLevel);
   return a.col !== b.col || a.row !== b.row;
 }
 
@@ -52,7 +79,7 @@ export function isNewCharacterTier(oldLevel: number, newLevel: number): boolean 
 export interface SpriteStyle {
   width: number;
   height: number;
-  /** Full height including label — container uses overflow:hidden to crop */
+  /** Full visible cell height — equals container height (no label to clip). */
   fullCellH: number;
   backgroundImage: string;
   backgroundSize: string;
@@ -60,33 +87,22 @@ export interface SpriteStyle {
   backgroundRepeat: string;
 }
 
-// Labels ("LEVEL 1", "LEVEL 2" …) sit at the TOP of each cell in this sheet.
-// This ratio (label height / cell height) lets us skip past them.
-// Measured: ~70px label in 600px cell = ~11.7%
-const LABEL_TOP_RATIO = 0.117;
-
 /**
- * Returns the CSS values needed to window into the correct character cell.
+ * Returns CSS values to window into the correct character cell.
  *
- * displayW    — desired output width in px
- * displayH    — desired output height in px; the container clips at this height
- *               so set it < (scaledCellH * (1 - LABEL_TOP_RATIO)) to avoid
- *               showing the ground area at the bottom
- * level       — current player level
+ * displayW  — desired output width in px
+ * displayH  — desired output height in px (clipped to this; set ≤ 2×displayW)
+ * level     — current player level
  */
 export function getSpriteStyle(displayW: number, displayH: number, level: number): SpriteStyle {
-  const { col, row } = getCharacterTier(level);
+  const { col, row } = getCharacterForLevel(level);
 
-  // Scale the sheet so each cell exactly fills displayW × (displayW * 2.5)
-  // Cell aspect ratio: CELL_W:CELL_H = 240:600 = 1:2.5
-  const scaledCellH = displayW * (CELL_H / CELL_W); // displayW * 2.5
+  // Scale so each cell fills exactly displayW × scaledCellH.
+  // Cell aspect ratio 120:240 = 1:2, so scaledCellH = 2 × displayW.
+  const scaledCellH = displayW * (CELL_H / CELL_W); // 2 × displayW
 
-  const bgW = displayW * 5;   // full sheet scaled width  (5 cols)
-  const bgH = scaledCellH * 2; // full sheet scaled height (2 rows)
-
-  // Shift background UP by the label height so the label scrolls above
-  // the container's visible area (container has overflow: hidden)
-  const labelOffset = scaledCellH * LABEL_TOP_RATIO;
+  const bgW = COLS * displayW;        // = 10 × displayW
+  const bgH = ROWS * scaledCellH;     // = 10 × displayW (square sheet)
 
   return {
     width: displayW,
@@ -94,7 +110,7 @@ export function getSpriteStyle(displayW: number, displayH: number, level: number
     fullCellH: scaledCellH,
     backgroundImage: `url('${SPRITE_SHEET}')`,
     backgroundSize: `${bgW}px ${bgH}px`,
-    backgroundPosition: `${-(col * displayW)}px ${-(row * scaledCellH) - labelOffset}px`,
+    backgroundPosition: `${-(col * displayW)}px ${-(row * scaledCellH)}px`,
     backgroundRepeat: 'no-repeat',
   };
 }

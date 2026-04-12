@@ -181,7 +181,12 @@ function DashboardContent() {
     if (doneColumn && columnId === doneColumn.id) {
       const card = cards.find(c => c.id === cardId);
       if (card) {
-        await gam.awardCardCompletion(card);
+        const cardSubtasks = subtasks[card.id] || [];
+        const allSubtasksDone = cardSubtasks.length > 0 && cardSubtasks.every(s => s.completed);
+        await gam.awardCardCompletion(card, {
+          all_subtasks_complete: allSubtasksDone,
+          subtask_count: cardSubtasks.length,
+        });
 
         // Epic completion bonus: if this was the last card in the epic, award 200 XP
         if (card.epic_id) {
@@ -205,7 +210,7 @@ function DashboardContent() {
         }
       }
     }
-  }, [moveCardToColumn, columns, cards, epics, gam, userId, board]);
+  }, [moveCardToColumn, columns, cards, epics, gam, userId, board, subtasks]);
 
   // ─── Undoable card actions ────────────────────────────────────
 

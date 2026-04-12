@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { CharacterSprite } from '@/components/board/CharacterSprite';
-import { isNewCharacterTier, getCharacterTier } from '@/lib/character-sprite';
+import { isNewCharacterTier, getCharacterTierName } from '@/lib/character-sprite';
 
 interface LevelUpCelebrationProps {
   level: number;
@@ -27,7 +27,7 @@ export function LevelUpCelebration({ level, title, color, onComplete }: LevelUpC
 
   // Did this level-up unlock a new character appearance?
   const newTier = level > 1 && isNewCharacterTier(level - 1, level);
-  const tierName = getCharacterTier(level).tierName;
+  const tierName = getCharacterTierName(level);
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase('hold'), 350);

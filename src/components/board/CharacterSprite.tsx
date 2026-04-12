@@ -3,17 +3,17 @@
 import { getSpriteStyle } from '@/lib/character-sprite';
 
 // ─── Size presets ─────────────────────────────────────────────────────────────
-// Height is intentionally less than displayW * 2.5 to crop the label text
-// at the bottom of each sprite cell.
+// Cell aspect ratio is 1:2 (120×240px). Heights = 2×width for a full-body view.
+// No label text in this sheet, so no clipping tricks needed.
 const SIZE_PRESETS = {
-  /** XP bar portrait — head + torso crop */
-  sm:  { w: 40,  h: 66  },
-  /** Badge panel portrait — full body, no label */
-  md:  { w: 80,  h: 172 },
-  /** Level-up celebration — full body, cinematic */
-  lg:  { w: 140, h: 300 },
-  /** Inline tier icon — just the silhouette */
-  xs:  { w: 28,  h: 46  },
+  /** Inline portrait — XP bar, streaks */
+  xs: { w: 28,  h: 56  },
+  /** Small portrait — compact panels */
+  sm: { w: 44,  h: 88  },
+  /** Badge panel — full body */
+  md: { w: 80,  h: 160 },
+  /** Level-up celebration — cinematic full body */
+  lg: { w: 140, h: 280 },
 } as const;
 
 export type CharacterSpriteSize = keyof typeof SIZE_PRESETS;
@@ -43,7 +43,7 @@ export function CharacterSprite({ level, size, className, style }: CharacterSpri
       <div
         style={{
           width: sprite.width,
-          height: sprite.fullCellH,  // taller than container — label gets clipped
+          height: sprite.fullCellH,
           backgroundImage: sprite.backgroundImage,
           backgroundSize: sprite.backgroundSize,
           backgroundPosition: sprite.backgroundPosition,
