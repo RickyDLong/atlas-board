@@ -151,6 +151,18 @@ export async function archiveEpicCards(epicId: string): Promise<string[]> {
   return (data || []).map((c: { id: string }) => c.id);
 }
 
+export async function bulkArchiveDoneCards(doneColumnId: string): Promise<string[]> {
+  // Archive all non-archived cards in the done column, return their IDs
+  const { data, error } = await supabase
+    .from('cards')
+    .update({ archived_at: new Date().toISOString() })
+    .eq('column_id', doneColumnId)
+    .is('archived_at', null)
+    .select('id');
+  if (error) throw error;
+  return (data || []).map((c: { id: string }) => c.id);
+}
+
 export async function createCard(card: Omit<Card, 'id' | 'created_at' | 'updated_at'>): Promise<Card> {
   const { data, error } = await supabase.from('cards').insert(card).select().single();
   if (error) throw error;

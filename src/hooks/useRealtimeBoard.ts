@@ -34,7 +34,7 @@ export function useRealtimeBoard(): PublicBoardAPI {
     board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, loading, error,
     __setCards, __setColumns, __setCategories, __setEpics, __setSubtasks,
     // Destructure all action methods so we can wrap them
-    addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards,
+    addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards, archiveDoneCards,
     addEpic, editEpic, removeEpic,
     addColumn, editColumn, removeColumn, reorderColumns,
     addCategory, editCategory, removeCategory,
@@ -103,6 +103,10 @@ export function useRealtimeBoard(): PublicBoardAPI {
   const mutedArchiveEpicCards = useCallback(
     (epicId: string) => withMute(() => archiveEpicCards(epicId)),
     [archiveEpicCards, withMute]
+  );
+  const mutedArchiveDoneCards = useCallback(
+    (doneColumnId: string) => withMute(() => archiveDoneCards(doneColumnId)),
+    [archiveDoneCards, withMute]
   );
   const mutedAddEpic = useCallback(
     (epic: Parameters<typeof addEpic>[0]) => withMute(() => addEpic(epic)),
@@ -352,6 +356,7 @@ export function useRealtimeBoard(): PublicBoardAPI {
     archiveCard: mutedArchiveCard,
     unarchiveCard: mutedUnarchiveCard,
     archiveEpicCards: mutedArchiveEpicCards,
+    archiveDoneCards: mutedArchiveDoneCards,
     addEpic: mutedAddEpic,
     editEpic: mutedEditEpic,
     removeEpic: mutedRemoveEpic,
@@ -376,7 +381,7 @@ export function useRealtimeBoard(): PublicBoardAPI {
   }), [
     board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, loading, error,
     mutedAddCard, mutedEditCard, mutedRemoveCard, mutedMoveCardToColumn,
-    mutedArchiveCard, mutedUnarchiveCard, mutedArchiveEpicCards,
+    mutedArchiveCard, mutedUnarchiveCard, mutedArchiveEpicCards, mutedArchiveDoneCards,
     mutedAddEpic, mutedEditEpic, mutedRemoveEpic,
     mutedAddColumn, mutedEditColumn, mutedRemoveColumn, mutedReorderColumns,
     mutedAddCategory, mutedEditCategory, mutedRemoveCategory,

@@ -181,6 +181,12 @@ export function useBoard() {
     setEpics(prev => prev.map(e => e.id === epicId ? { ...e, status: 'archived', archived_at: new Date().toISOString(), updated_at: new Date().toISOString() } : e));
   }, []);
 
+  const archiveDoneCards = useCallback(async (doneColumnId: string): Promise<number> => {
+    const archivedIds = await actions.bulkArchiveDoneCards(doneColumnId);
+    setCards(prev => prev.filter(c => !archivedIds.includes(c.id)));
+    return archivedIds.length;
+  }, []);
+
   // ─── Epic actions ────────────────────────────────────────
 
   const addEpic = useCallback(async (epic: Omit<Epic, 'id' | 'created_at' | 'updated_at'>) => {
@@ -365,7 +371,7 @@ export function useBoard() {
 
   return {
     board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, loading, error,
-    addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards,
+    addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards, archiveDoneCards,
     addEpic, editEpic, removeEpic,
     addColumn, editColumn, removeColumn, reorderColumns,
     addCategory, editCategory, removeCategory,

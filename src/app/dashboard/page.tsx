@@ -50,7 +50,7 @@ export default function DashboardPage() {
 function DashboardContent() {
   const {
     board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, loading, error,
-    addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards,
+    addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards, archiveDoneCards,
     addEpic, editEpic, removeEpic,
     addColumn, editColumn, removeColumn, reorderColumns,
     addCategory, editCategory, removeCategory,
@@ -105,6 +105,8 @@ function DashboardContent() {
   }
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [clearDoneConfirm, setClearDoneConfirm] = useState(false);
+  const [clearDoneTimer, setClearDoneTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [addToColumnId, setAddToColumnId] = useState<string | null>(null);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
 
@@ -377,6 +379,24 @@ function DashboardContent() {
 
   const doneCol = columns.find(c => c.is_done);
   const totalActive = cards.filter(c => !doneCol || c.column_id !== doneCol.id).length;
+  const doneCardCount = doneCol ? cards.filter(c => c.column_id === doneCol.id && !c.archived_at).length : 0;
+
+  const handleClearDone = async () => {
+    if (!doneCol || doneCardCount === 0) return;
+    if (!clearDoneConfirm) {
+      setClearDoneConfirm(true);
+      const t = setTimeout(() => setClearDoneConfirm(false), 3000);
+      setClearDoneTimer(t);
+      return;
+    }
+    // Confirmed — execute
+    if (clearDoneTimer) clearTimeout(clearDoneTimer);
+    setClearDoneConfirm(false);
+    const count = await archiveDoneCards(doneCol.id);
+    if (count > 0 && userId && board?.id) {
+      await gam.awardXP('archive_batch', { count, column: doneCol.title });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
@@ -559,7 +579,22 @@ function DashboardContent() {
           </button>
         )}
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          {/* Archive Done button — only visible when the done column has cards */}
+          {doneCardCount > 0 && (
+            <button
+              onClick={handleClearDone}
+              className={`px-3 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer ${
+                clearDoneConfirm
+                  ? 'bg-[#f871711a] border-[#f87171] text-[#f87171]'
+                  : 'bg-transparent border-[#2a2a3a] text-[#8888a0] hover:border-[#555568] hover:text-[#aaaabc]'
+              }`}
+            >
+              {clearDoneConfirm
+                ? `Archive ${doneCardCount} card${doneCardCount !== 1 ? 's' : ''}? Confirm`
+                : `🧹 Archive ${doneCol?.title ?? 'Done'} (${doneCardCount})`}
+            </button>
+          )}
           <SavedFilterBar
             savedFilters={savedFilters}
             currentFilter={{ categoryIds: filterCategories, priority: filterPriority, epicId: filterEpicId }}
