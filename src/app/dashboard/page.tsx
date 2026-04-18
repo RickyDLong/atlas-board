@@ -27,11 +27,12 @@ import { StatsView } from '@/components/board/StatsView';
 import { ListView } from '@/components/board/ListView';
 import { ArchivePanel } from '@/components/board/ArchivePanel';
 import { SavedFilterBar } from '@/components/board/SavedFilterBar';
+import { RoadmapView } from '@/components/board/RoadmapView';
 import { AtlasLogo } from '@/components/AtlasLogo';
 import { DailyQuests } from '@/components/board/DailyQuests';
 import { incrementQuestProgress } from '@/lib/daily-quest-actions';
 
-type ViewMode = 'board' | 'calendar' | 'stats' | 'list';
+type ViewMode = 'board' | 'calendar' | 'stats' | 'list' | 'roadmap';
 
 export default function DashboardPage() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -337,6 +338,21 @@ function DashboardContent() {
     }
   }, [cards, editCard, undoRedo, userId, board]);
 
+  // Compute which cards are blocked (their blocker is not in the done column)
+  // Must be above early returns to satisfy rules-of-hooks
+  const blockedCardIds = useMemo(() => {
+    const doneColId = columns.find(c => c.is_done)?.id;
+    const blocked = new Set<string>();
+    for (const rel of cardRelationships) {
+      if (rel.relationship_type !== 'blocks') continue;
+      const blocker = cards.find(c => c.id === rel.source_card_id);
+      if (blocker && blocker.column_id !== doneColId && !blocker.archived_at) {
+        blocked.add(rel.target_card_id);
+      }
+    }
+    return blocked;
+  }, [cardRelationships, cards, columns]);
+
   const handleSignOut = async () => {
     await signOut();
     router.push('/auth/login');
@@ -459,6 +475,17 @@ function DashboardContent() {
               title="Stats view"
             >
               &#9679;
+            </button>
+            <button
+              onClick={() => setViewMode('roadmap')}
+              className={`h-8 px-2.5 text-xs font-medium transition-all cursor-pointer ${viewMode === 'roadmap' ? 'bg-[#22222f] text-white' : 'text-[#555568] hover:text-[#8888a0]'}`}
+              title="Roadmap view"
+            >
+              <svg width="13" height="11" viewBox="0 0 13 11" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                <line x1="1" y1="2" x2="8" y2="2" />
+                <line x1="4" y1="5.5" x2="12" y2="5.5" />
+                <line x1="2" y1="9" x2="10" y2="9" />
+              </svg>
             </button>
           </div>
           <button
@@ -685,6 +712,7 @@ function DashboardContent() {
               subtasks={subtasks}
               labels={labels}
               cardLabelsMap={cardLabels}
+              blockedCardIds={blockedCardIds}
               onAddCard={(colId) => { setAddToColumnId(colId); setShowAddModal(true); }}
               onCardClick={(card) => setDetailCard(card)}
               onCardMenu={(card, x, y) => setContextMenu({ card, x, y })}
@@ -709,6 +737,16 @@ function DashboardContent() {
       ) : viewMode === 'list' ? (
         <div className="flex min-h-[calc(100vh-140px)] bg-[#0a0a0f]">
           <ListView
+            cards={filteredCards}
+            categories={categories}
+            columns={columns}
+            epics={epics}
+            onCardClick={(card) => setDetailCard(card)}
+          />
+        </div>
+      ) : viewMode === 'roadmap' ? (
+        <div className="flex min-h-[calc(100vh-140px)] bg-[#0a0a0f]">
+          <RoadmapView
             cards={filteredCards}
             categories={categories}
             columns={columns}
@@ -803,6 +841,11 @@ function DashboardContent() {
           onMove={async (colId) => { await undoableMoveCard(detailCard.id, colId); setDetailCard({ ...detailCard, column_id: colId }); }}
           onViewEpic={(epicId) => { setSelectedEpicId(epicId); setShowEpicPanel(true); setDetailCard(null); }}
           onArchive={doneCol && detailCard.column_id === doneCol.id ? async () => { await undoableArchiveCard(detailCard.id); setDetailCard(null); } : undefined}
+          onLogTime={async (minutes) => {
+            const newActual = (detailCard.actual_hours || 0) + minutes / 60;
+            await undoableEditCard(detailCard.id, { actual_hours: parseFloat(newActual.toFixed(2)) });
+            setDetailCard(prev => prev ? { ...prev, actual_hours: parseFloat(newActual.toFixed(2)) } : null);
+          }}
           allCards={cards}
           cardRelationships={cardRelationships}
           onAddRelationship={async (s, t, type) => addCardRelationship(s, t, type)}

@@ -7,6 +7,7 @@ import { ActivityLog } from './ActivityLog';
 import { CardComments } from './CardComments';
 import { CardRelationships } from './CardRelationships';
 import { CardAttachments } from './CardAttachments';
+import { PomodoroTimer } from './PomodoroTimer';
 
 interface DetailModalProps {
   card: Card;
@@ -19,6 +20,7 @@ interface DetailModalProps {
   onMove: (colId: string) => void;
   onViewEpic: (epicId: string) => void;
   onArchive?: () => void;
+  onLogTime?: (minutes: number) => void;
   allCards?: Card[];
   cardRelationships?: CardRelationship[];
   onAddRelationship?: (sourceCardId: string, targetCardId: string, type: RelationshipType) => Promise<CardRelationship | undefined>;
@@ -27,11 +29,12 @@ interface DetailModalProps {
 }
 
 export function DetailModal({
-  card, categories, columns, epics, onEdit, onClose, onDelete, onMove, onViewEpic, onArchive,
+  card, categories, columns, epics, onEdit, onClose, onDelete, onMove, onViewEpic, onArchive, onLogTime,
   allCards = [], cardRelationships = [], onAddRelationship, onRemoveRelationship, onViewCard,
 }: DetailModalProps) {
   const [showActivity, setShowActivity] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showPomodoro, setShowPomodoro] = useState(false);
   const cat = categories.find(c => c.id === card.category_id);
   const pri = PRIORITIES.find(p => p.id === card.priority);
   const col = columns.find(c => c.id === card.column_id);
@@ -138,6 +141,24 @@ export function DetailModal({
             </button>
             {showComments && (
               <CardComments cardId={card.id} boardId={card.board_id} />
+            )}
+          </div>
+
+          {/* Focus Timer */}
+          <div className="border-t border-[#1e1e2e] pt-3">
+            <button
+              onClick={() => setShowPomodoro(p => !p)}
+              className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-[#555568] hover:text-[#8888a0] transition-colors cursor-pointer mb-1"
+            >
+              <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" className={`transition-transform ${showPomodoro ? 'rotate-90' : ''}`}>
+                <path d="M2 1l4 3-4 3V1z" />
+              </svg>
+              Focus Timer
+            </button>
+            {showPomodoro && (
+              <PomodoroTimer
+                onSessionComplete={(minutes) => onLogTime?.(minutes)}
+              />
             )}
           </div>
 

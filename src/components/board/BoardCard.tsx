@@ -11,6 +11,7 @@ interface BoardCardProps {
   cardLabels?: Label[];
   isDoneColumn?: boolean;
   showShields?: boolean;
+  isBlocked?: boolean;
   onClick: () => void;
   onMenu: (x: number, y: number) => void;
 }
@@ -32,7 +33,7 @@ export function getShieldAging(card: Card, isDoneColumn: boolean): { count: numb
   return { count: 4, color: '#f87171', label: `${days} days in column` };
 }
 
-export function BoardCard({ card, category, priority, subtaskProgress = null, cardLabels = [], isDoneColumn = false, showShields = true, onClick, onMenu }: BoardCardProps) {
+export function BoardCard({ card, category, priority, subtaskProgress = null, cardLabels = [], isDoneColumn = false, showShields = true, isBlocked = false, onClick, onMenu }: BoardCardProps) {
   const [dragging, setDragging] = useState(false);
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -147,6 +148,17 @@ export function BoardCard({ card, category, priority, subtaskProgress = null, ca
             );
           })()}
         </div>
+
+        {/* Blocked indicator */}
+        {isBlocked && (
+          <span
+            className="text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wide"
+            style={{ color: '#f87171', background: '#f8717118', border: '1px solid #f8717133' }}
+            title="Blocked by another card"
+          >
+            🔒 Blocked
+          </span>
+        )}
 
         {/* Aging indicator — shields (RPG) or dots (clean) */}
         {aging && (

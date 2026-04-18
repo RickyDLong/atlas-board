@@ -13,6 +13,7 @@ interface BoardColumnProps {
   subtasks?: Record<string, Subtask[]>;
   labels?: Label[];
   cardLabelsMap?: CardLabel[];
+  blockedCardIds?: Set<string>;
   onAddCard: (columnId: string) => void;
   onCardClick: (card: Card) => void;
   onCardMenu: (card: Card, x: number, y: number) => void;
@@ -20,7 +21,7 @@ interface BoardColumnProps {
 }
 
 export function BoardColumn({
-  column, cards, categories, subtasks = {}, labels = [], cardLabelsMap = [], onAddCard, onCardClick, onCardMenu, onDrop,
+  column, cards, categories, subtasks = {}, labels = [], cardLabelsMap = [], blockedCardIds = new Set(), onAddCard, onCardClick, onCardMenu, onDrop,
 }: BoardColumnProps) {
   const { columnDisplayName, isGamified } = useGamificationMode();
 
@@ -102,6 +103,7 @@ export function BoardColumn({
               cardLabels={thisCardLabels}
               isDoneColumn={isDone}
               showShields={isGamified}
+              isBlocked={blockedCardIds.has(card.id)}
               onClick={() => onCardClick(card)}
               onMenu={(x, y) => onCardMenu(card, x, y)}
             />
