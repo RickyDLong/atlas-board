@@ -32,8 +32,9 @@ export async function updateSession(request: NextRequest) {
   // Redirect unauthenticated users to login (except auth routes and public pages)
   const isAuthRoute = request.nextUrl.pathname.startsWith('/auth');
   const isPublicRoute = request.nextUrl.pathname === '/';
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api/atlas');
 
-  if (!user && !isAuthRoute && !isPublicRoute) {
+  if (!user && !isAuthRoute && !isPublicRoute && !isApiRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth/login';
     return NextResponse.redirect(url);

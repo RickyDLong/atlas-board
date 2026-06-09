@@ -23,5 +23,14 @@
 7. Profile interface exists in types but no table/UI for it
 8. Optimistic state updates have potential race conditions on rapid edits
 
+## Atlas REST API (added 2026-06-09)
+- **Base URL:** `https://atlas-board.vercel.app/api/atlas`
+- **Auth:** `Authorization: Bearer <ATLAS_INTERNAL_API_KEY>`
+- **ATLAS_INTERNAL_API_KEY:** `atl_q8ufEnPA9fH0yjCisPYdlgGbdWu7obMbQbVjq9Q8bWs`
+- **Skill docs:** `docs/ATLAS_API_SKILL.md` in repo
+- Key endpoints: GET /board, GET/POST /cards, PATCH /cards/:id, POST /cards/:id/move, POST /cards/:id/archive, GET/POST /epics, GET /columns, GET /categories
+- Requires `SUPABASE_SERVICE_ROLE_KEY` set in Vercel env vars to function
+
 ## Session Log
 - **2026-04-06:** Project created in Cowork. Full codebase audit completed. MEMORY.md and CLAUDE.md initialized.
+- **2026-06-09:** Added blocked card indicators, Pomodoro timer, roadmap view, and full REST API under /api/atlas/*.
