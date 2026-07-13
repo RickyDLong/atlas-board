@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Board, Column, Category, Card, Epic, Subtask, ColumnTransition, CfdSnapshot, SavedFilter, Label, CardLabel, CardTemplate, CardRelationship, RelationshipType, RecurrenceRule } from '@/types/database';
 import * as actions from '@/lib/board-actions';
 
@@ -233,6 +233,13 @@ export function useBoard() {
 
   // ─── Category actions ────────────────────────────────────
 
+  // Debounced persistence for category edits: the SettingsModal inputs fire
+  // onChange on every keystroke / color-picker tick, so we update local state
+  // optimistically and coalesce the Supabase writes. Pending field changes are
+  // accumulated per-category so a rapid label-then-color edit persists both.
+  const catEditTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const catPendingEdits = useRef<Record<string, Partial<Pick<Category, 'label' | 'color' | 'position'>>>>({});
+
   const addCategory = useCallback(async (label: string, color: string) => {
     if (!board) return;
     const cat = await actions.createCategory(board.id, label, color, categories.length);
@@ -240,13 +247,32 @@ export function useBoard() {
   }, [board, categories.length]);
 
   const editCategory = useCallback(async (id: string, updates: Partial<Pick<Category, 'label' | 'color' | 'position'>>) => {
-    await actions.updateCategory(id, updates);
+    // Optimistic: reflect the change locally before the network round-trip so
+    // the controlled input doesn't revert / drop characters while typing.
     setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+    catPendingEdits.current[id] = { ...catPendingEdits.current[id], ...updates };
+    clearTimeout(catEditTimers.current[id]);
+    catEditTimers.current[id] = setTimeout(() => {
+      const payload = catPendingEdits.current[id];
+      delete catPendingEdits.current[id];
+      delete catEditTimers.current[id];
+      actions.updateCategory(id, payload).catch(err => {
+        console.error('Failed to persist category edit', err);
+      });
+    }, 400);
   }, []);
 
   const removeCategory = useCallback(async (id: string) => {
-    await actions.deleteCategory(id);
+    // Cancel any pending debounced edit for this category so a late write
+    // can't resurrect the deleted row.
+    clearTimeout(catEditTimers.current[id]);
+    delete catEditTimers.current[id];
+    delete catPendingEdits.current[id];
+    // Optimistic: drop the category and mirror the DB's ON DELETE SET NULL by
+    // clearing category_id on any local cards that referenced it.
     setCategories(prev => prev.filter(c => c.id !== id));
+    setCards(prev => prev.map(c => c.category_id === id ? { ...c, category_id: null } : c));
+    await actions.deleteCategory(id);
   }, []);
 
   // ─── Label actions ───────────────────────────────────────
