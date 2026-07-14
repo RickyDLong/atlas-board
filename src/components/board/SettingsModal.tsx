@@ -138,7 +138,7 @@ export function SettingsModal({
                   <input
                     value={cat.label}
                     onChange={e => onEditCategory(cat.id, { label: e.target.value })}
-                    className="flex-1 bg-transparent border-none text-[#e8e8f0] text-[13px] outline-none"
+                    className="flex-1 bg-[#0a0a0f] border border-[#2a2a3a] rounded-md px-2.5 py-1.5 text-[#e8e8f0] text-[13px] outline-none transition-colors hover:border-[#3a3a4a] focus:border-[#4a9eff] focus:ring-1 focus:ring-[#4a9eff]/30 placeholder:text-[#555568]"
                     placeholder="Category name..."
                   />
                   <button onClick={() => onRemoveCategory(cat.id)}
@@ -164,7 +164,7 @@ export function SettingsModal({
                   <input
                     value={col.title}
                     onChange={e => onEditColumn(col.id, { title: e.target.value })}
-                    className="flex-1 bg-transparent border-none text-[#e8e8f0] text-[13px] outline-none"
+                    className="flex-1 bg-[#0a0a0f] border border-[#2a2a3a] rounded-md px-2.5 py-1.5 text-[#e8e8f0] text-[13px] outline-none transition-colors hover:border-[#3a3a4a] focus:border-[#4a9eff] focus:ring-1 focus:ring-[#4a9eff]/30 placeholder:text-[#555568]"
                     placeholder="Column name..."
                   />
                   <input
@@ -200,7 +200,7 @@ export function SettingsModal({
                   <input
                     value={lbl.name}
                     onChange={e => onEditLabel(lbl.id, { name: e.target.value })}
-                    className="flex-1 bg-transparent border-none text-[#e8e8f0] text-[13px] outline-none"
+                    className="flex-1 bg-[#0a0a0f] border border-[#2a2a3a] rounded-md px-2.5 py-1.5 text-[#e8e8f0] text-[13px] outline-none transition-colors hover:border-[#3a3a4a] focus:border-[#4a9eff] focus:ring-1 focus:ring-[#4a9eff]/30 placeholder:text-[#555568]"
                     placeholder="Label name..."
                   />
                   <button onClick={() => onRemoveLabel(lbl.id)}
