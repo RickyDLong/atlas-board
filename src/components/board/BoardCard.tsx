@@ -83,8 +83,8 @@ export function BoardCard({ card, category, priority, subtaskProgress = null, ca
         </p>
       )}
 
-      <div className="flex items-center justify-between flex-wrap">
-        <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-start justify-between gap-x-2 gap-y-1">
+        <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
           {category && (
             <span
               className="text-[10px] font-medium px-1.5 py-0.5 rounded uppercase tracking-wide"
@@ -149,43 +149,46 @@ export function BoardCard({ card, category, priority, subtaskProgress = null, ca
           })()}
         </div>
 
-        {/* Blocked indicator */}
-        {isBlocked && (
-          <span
-            className="text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wide"
-            style={{ color: '#f87171', background: '#f8717118', border: '1px solid #f8717133' }}
-            title="Blocked by another card"
-          >
-            🔒 Blocked
-          </span>
-        )}
+        {/* Right-side indicators — kept together and never pushed to a new line */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Blocked indicator */}
+          {isBlocked && (
+            <span
+              className="text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wide"
+              style={{ color: '#f87171', background: '#f8717118', border: '1px solid #f8717133' }}
+              title="Blocked by another card"
+            >
+              🔒 Blocked
+            </span>
+          )}
 
-        {/* Aging indicator — shields (RPG) or dots (clean) */}
-        {aging && (
-          <div className="flex items-center gap-0.5" title={aging.label} data-testid="shield-aging">
-            {showShields
-              ? Array.from({ length: aging.count }).map((_, i) => (
-                  <svg
-                    key={i}
-                    width="11"
-                    height="13"
-                    viewBox="0 0 24 28"
-                    fill={aging.color}
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M12 0L0 5v8c0 8.4 5.1 13.2 12 15 6.9-1.8 12-6.6 12-15V5L12 0z" />
-                  </svg>
-                ))
-              : Array.from({ length: aging.count }).map((_, i) => (
-                  <span
-                    key={i}
-                    className="inline-block w-[7px] h-[7px] rounded-full"
-                    style={{ backgroundColor: aging.color }}
-                  />
-                ))
-            }
-          </div>
-        )}
+          {/* Aging indicator — shields (RPG) or dots (clean) */}
+          {aging && (
+            <div className="flex items-center gap-0.5" title={aging.label} data-testid="shield-aging">
+              {showShields
+                ? Array.from({ length: aging.count }).map((_, i) => (
+                    <svg
+                      key={i}
+                      width="11"
+                      height="13"
+                      viewBox="0 0 24 28"
+                      fill={aging.color}
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M12 0L0 5v8c0 8.4 5.1 13.2 12 15 6.9-1.8 12-6.6 12-15V5L12 0z" />
+                    </svg>
+                  ))
+                : Array.from({ length: aging.count }).map((_, i) => (
+                    <span
+                      key={i}
+                      className="inline-block w-[7px] h-[7px] rounded-full"
+                      style={{ backgroundColor: aging.color }}
+                    />
+                  ))
+              }
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
