@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Card, Category, Column, Epic, CardRelationship, RelationshipType } from '@/types/database';
-import { PRIORITIES } from '@/types/database';
+import { PRIORITIES } from '@/constants/board';
 import { ActivityLog } from './ActivityLog';
 import { CardComments } from './CardComments';
 import { CardRelationships } from './CardRelationships';

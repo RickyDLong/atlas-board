@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/client';
 import type { Board, Column, Category, Card, Epic, Subtask, UserPreferences, ColumnTransition, CfdSnapshot, SavedFilter, Label, CardLabel, CardTemplate, ActivityLogEntry, ActivityAction, CardComment, CardRelationship, RelationshipType, CardAttachment } from '@/types/database';
-import { DEFAULT_COLUMNS, DEFAULT_CATEGORIES } from '@/types/database';
+import { DEFAULT_COLUMNS, DEFAULT_CATEGORIES } from '@/constants/board';
 
 const supabase = createClient();
 

@@ -137,4 +137,33 @@ describe('EpicPanel', () => {
       expect(screen.getByText('Setup project')).toBeInTheDocument();
     });
   });
+
+  describe('epic edit form', () => {
+    // The pencil (✎) button on each list row opens the inline edit form.
+    const firstPencil = () => screen.getAllByText('✎')[0];
+
+    it('shows a Delete button (alongside Update) when editing an existing epic', () => {
+      render(<EpicPanel {...defaultProps} />);
+      fireEvent.click(firstPencil());
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+      expect(screen.getByText('Update')).toBeInTheDocument();
+    });
+
+    it('calls onRemoveEpic when the form Delete button is clicked', async () => {
+      const onRemoveEpic = vi.fn().mockResolvedValue(undefined);
+      render(<EpicPanel {...defaultProps} onRemoveEpic={onRemoveEpic} />);
+      fireEvent.click(firstPencil());
+      fireEvent.click(screen.getByText('Delete'));
+      await waitFor(() => {
+        expect(onRemoveEpic).toHaveBeenCalledWith('epic-1');
+      });
+    });
+
+    it('shows Create and no Delete button when creating a new epic', () => {
+      render(<EpicPanel {...defaultProps} />);
+      fireEvent.click(screen.getByText('+ New Epic'));
+      expect(screen.getByText('Create')).toBeInTheDocument();
+      expect(screen.queryByText('Delete')).not.toBeInTheDocument();
+    });
+  });
 });

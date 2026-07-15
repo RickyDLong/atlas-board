@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Board, Category, Column, UserPreferences, Label } from '@/types/database';
-import { PRESET_COLORS } from '@/types/database';
+import { PRESET_COLORS } from '@/constants/board';
 import { getUserPreferences, updateUserPreferences } from '@/lib/board-actions';
 
 interface SettingsModalProps {

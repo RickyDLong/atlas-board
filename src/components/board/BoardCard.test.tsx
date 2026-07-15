@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BoardCard, getShieldAging } from './BoardCard';
 import { mockCards, mockCategories, createMockCard } from '@/__tests__/fixtures';
-import { PRIORITIES } from '@/types/database';
+import { PRIORITIES } from '@/constants/board';
 
 describe('BoardCard', () => {
   const defaultCard = mockCards[0]; // 'Add dark mode', medium priority, Side Projects

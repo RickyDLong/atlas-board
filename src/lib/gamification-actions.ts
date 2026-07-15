@@ -5,7 +5,7 @@ import {
   PRIORITY_XP_MULTIPLIER,
   STREAK_XP_MULTIPLIER,
   LEVEL_TITLES,
-} from '@/types/database';
+} from '@/constants/gamification';
 
 const supabase = createClient();
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Epic, Card, Column } from '@/types/database';
-import { EPIC_STATUSES, PRESET_COLORS } from '@/types/database';
+import { EPIC_STATUSES, PRESET_COLORS } from '@/constants/board';
 
 interface EpicPanelProps {
   boardId: string;

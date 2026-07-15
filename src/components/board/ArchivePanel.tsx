@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Card, Category } from '@/types/database';
-import { PRIORITIES } from '@/types/database';
+import { PRIORITIES } from '@/constants/board';
 import { getArchivedCards } from '@/lib/board-actions';
 
 interface ArchivePanelProps {

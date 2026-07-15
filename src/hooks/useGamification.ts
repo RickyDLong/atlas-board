@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { UserLevel, UserStreak, UserBadge, XPAction, Card } from '@/types/database';
-import { BADGE_DEFINITIONS } from '@/types/database';
+import { BADGE_DEFINITIONS } from '@/constants/gamification';
 import * as gamification from '@/lib/gamification-actions';
 import { createClient } from '@/lib/supabase/client';
 

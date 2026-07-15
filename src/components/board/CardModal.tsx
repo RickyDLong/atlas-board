@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Card, Category, Column, Epic, Subtask, Label, CardTemplate, RecurrenceRule } from '@/types/database';
-import { PRIORITIES, EFFORTS, RECURRENCE_OPTIONS } from '@/types/database';
+import { PRIORITIES, EFFORTS, RECURRENCE_OPTIONS } from '@/constants/board';
 import { LabelPicker } from './LabelPicker';
 import { TemplatePicker } from './TemplatePicker';
 

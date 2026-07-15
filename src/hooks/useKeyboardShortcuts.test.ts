@@ -115,8 +115,8 @@ describe('useKeyboardShortcuts', () => {
 });
 
 describe('SHORTCUTS constant', () => {
-  it('has 7 defined shortcuts', () => {
-    expect(SHORTCUTS).toHaveLength(7);
+  it('has 9 defined shortcuts', () => {
+    expect(SHORTCUTS).toHaveLength(9);
   });
 
   it('each shortcut has key and description', () => {

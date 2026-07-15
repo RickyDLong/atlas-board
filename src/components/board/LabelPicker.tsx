@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Label } from '@/types/database';
-import { PRESET_COLORS } from '@/types/database';
+import { PRESET_COLORS } from '@/constants/board';
 
 interface LabelPickerProps {
   labels: Label[];

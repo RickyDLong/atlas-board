@@ -1,7 +1,7 @@
 'use client';
 
 import type { Column, Card, Category, Subtask, Label, CardLabel } from '@/types/database';
-import { PRIORITIES } from '@/types/database';
+import { PRIORITIES } from '@/constants/board';
 import { BoardCard } from './BoardCard';
 import { useGamificationMode } from '@/contexts/GamificationModeContext';
 

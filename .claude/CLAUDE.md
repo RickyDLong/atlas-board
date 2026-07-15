@@ -11,14 +11,20 @@
 
 ### File Organization
 ```
-src/app/          → Routes and pages (App Router conventions)
-src/components/   → Reusable UI components
-src/hooks/        → Custom React hooks
-src/lib/          → Supabase clients and server actions
-src/types/        → TypeScript interfaces and constants
-src/constants/    → App-wide constants
-supabase/         → Database migrations
+src/app/                    → Routes and pages (App Router conventions)
+src/components/board/       → Core board UI (cards, columns, modals, panels)
+src/components/views/       → Alternate board views (List, Calendar, Roadmap, Stats, CFD)
+src/components/gamification/ → XP, badges, streaks, levels, character sprite
+src/hooks/                  → Custom React hooks
+src/lib/                    → Supabase clients and server actions
+src/types/                  → TypeScript interfaces and type aliases (no runtime values)
+src/constants/              → App-wide constants: board.ts, gamification.ts
+src/styles/                 → Global/vendor CSS (e.g. rpg-awesome.css)
+supabase/                   → Database migrations
 ```
+Constants live in `src/constants/`, NOT in `src/types/` — keep `src/types/database.ts`
+type-only. When adding a UI component, place it in the subfolder matching its concern
+(board / views / gamification).
 
 ### Naming
 - Components: PascalCase (`BoardCard.tsx`)
