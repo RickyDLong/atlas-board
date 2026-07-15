@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Board, Column, Category, Card, Epic, Subtask, ColumnTransition, CfdSnapshot, SavedFilter, Label, CardLabel, CardTemplate, CardRelationship, RelationshipType, RecurrenceRule } from '@/types/database';
 import * as actions from '@/lib/board-actions';
+import { useDebouncedEditor } from '@/hooks/useDebouncedEditor';
 
 function computeNextDueDate(currentDue: string, rule: RecurrenceRule): string {
   const d = new Date(currentDue + 'T00:00:00');
@@ -207,6 +208,16 @@ export function useBoard() {
     setCards(prev => prev.map(c => c.epic_id === id ? { ...c, epic_id: null } : c));
   }, []);
 
+  // ─── Debounced optimistic editors ────────────────────────
+  // Categories, columns, and labels are all edited through the SettingsModal's
+  // controlled name/color inputs, which fire onChange per keystroke and
+  // color-picker tick. Each editor applies the change to local state
+  // immediately, coalesces the Supabase writes, rolls back on failure, and
+  // flushes any pending write on unmount. See useDebouncedEditor.
+  const { edit: editColumn, cancel: cancelColumnEdit } = useDebouncedEditor(columns, setColumns, actions.updateColumn);
+  const { edit: editCategory, cancel: cancelCategoryEdit } = useDebouncedEditor(categories, setCategories, actions.updateCategory);
+  const { edit: editLabel, cancel: cancelLabelEdit } = useDebouncedEditor(labels, setLabels, actions.updateLabel);
+
   // ─── Column actions ──────────────────────────────────────
 
   const addColumn = useCallback(async (title: string, color: string) => {
@@ -215,15 +226,12 @@ export function useBoard() {
     setColumns(prev => [...prev, col]);
   }, [board, columns.length]);
 
-  const editColumn = useCallback(async (id: string, updates: Partial<Pick<Column, 'title' | 'color' | 'position' | 'is_done' | 'wip_limit'>>) => {
-    await actions.updateColumn(id, updates);
-    setColumns(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
-  }, []);
-
   const removeColumn = useCallback(async (id: string) => {
+    // Cancel any pending debounced edit so a late write can't resurrect the row.
+    cancelColumnEdit(id);
     await actions.deleteColumn(id);
     setColumns(prev => prev.filter(c => c.id !== id));
-  }, []);
+  }, [cancelColumnEdit]);
 
   const reorderColumns = useCallback(async (newColumns: Column[]) => {
     setColumns(newColumns);
@@ -233,47 +241,20 @@ export function useBoard() {
 
   // ─── Category actions ────────────────────────────────────
 
-  // Debounced persistence for category edits: the SettingsModal inputs fire
-  // onChange on every keystroke / color-picker tick, so we update local state
-  // optimistically and coalesce the Supabase writes. Pending field changes are
-  // accumulated per-category so a rapid label-then-color edit persists both.
-  const catEditTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const catPendingEdits = useRef<Record<string, Partial<Pick<Category, 'label' | 'color' | 'position'>>>>({});
-
   const addCategory = useCallback(async (label: string, color: string) => {
     if (!board) return;
     const cat = await actions.createCategory(board.id, label, color, categories.length);
     setCategories(prev => [...prev, cat]);
   }, [board, categories.length]);
 
-  const editCategory = useCallback(async (id: string, updates: Partial<Pick<Category, 'label' | 'color' | 'position'>>) => {
-    // Optimistic: reflect the change locally before the network round-trip so
-    // the controlled input doesn't revert / drop characters while typing.
-    setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
-    catPendingEdits.current[id] = { ...catPendingEdits.current[id], ...updates };
-    clearTimeout(catEditTimers.current[id]);
-    catEditTimers.current[id] = setTimeout(() => {
-      const payload = catPendingEdits.current[id];
-      delete catPendingEdits.current[id];
-      delete catEditTimers.current[id];
-      actions.updateCategory(id, payload).catch(err => {
-        console.error('Failed to persist category edit', err);
-      });
-    }, 400);
-  }, []);
-
   const removeCategory = useCallback(async (id: string) => {
-    // Cancel any pending debounced edit for this category so a late write
-    // can't resurrect the deleted row.
-    clearTimeout(catEditTimers.current[id]);
-    delete catEditTimers.current[id];
-    delete catPendingEdits.current[id];
-    // Optimistic: drop the category and mirror the DB's ON DELETE SET NULL by
-    // clearing category_id on any local cards that referenced it.
-    setCategories(prev => prev.filter(c => c.id !== id));
-    setCards(prev => prev.map(c => c.category_id === id ? { ...c, category_id: null } : c));
+    // Cancel any pending debounced edit so a late write can't resurrect the row.
+    cancelCategoryEdit(id);
     await actions.deleteCategory(id);
-  }, []);
+    setCategories(prev => prev.filter(c => c.id !== id));
+    // Mirror the DB's ON DELETE SET NULL on locally-cached cards.
+    setCards(prev => prev.map(c => c.category_id === id ? { ...c, category_id: null } : c));
+  }, [cancelCategoryEdit]);
 
   // ─── Label actions ───────────────────────────────────────
 
@@ -284,16 +265,12 @@ export function useBoard() {
     return label;
   }, [board]);
 
-  const editLabel = useCallback(async (id: string, updates: Partial<Pick<Label, 'name' | 'color'>>) => {
-    await actions.updateLabel(id, updates);
-    setLabels(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
-  }, []);
-
   const removeLabel = useCallback(async (id: string) => {
+    cancelLabelEdit(id);
     await actions.deleteLabel(id);
     setLabels(prev => prev.filter(l => l.id !== id));
     setCardLabels(prev => prev.filter(cl => cl.label_id !== id));
-  }, []);
+  }, [cancelLabelEdit]);
 
   const toggleCardLabel = useCallback(async (cardId: string, labelId: string) => {
     const exists = cardLabels.find(cl => cl.card_id === cardId && cl.label_id === labelId);

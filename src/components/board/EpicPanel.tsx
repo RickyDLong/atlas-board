@@ -84,6 +84,7 @@ export function EpicPanel({
                     initial={epic}
                     onSave={async (data) => { await onEditEpic(epic.id, data); setEditingId(null); }}
                     onCancel={() => setEditingId(null)}
+                    onDelete={async () => { await onRemoveEpic(epic.id); setEditingId(null); }}
                   />
                 );
               }
@@ -157,6 +158,7 @@ function EpicDetail({
           initial={epic}
           onSave={async (data) => { await onEdit(data); setEditing(false); }}
           onCancel={() => setEditing(false)}
+          onDelete={onDelete}
         />
       </div>
     );
@@ -231,11 +233,12 @@ function EpicDetail({
 // ─── Epic Form ─────────────────────────────────────────────
 
 function EpicForm({
-  initial, onSave, onCancel,
+  initial, onSave, onCancel, onDelete,
 }: {
   initial?: Epic;
   onSave: (data: Partial<Epic>) => Promise<void>;
   onCancel: () => void;
+  onDelete?: () => Promise<void>;
 }) {
   const [name, setName] = useState(initial?.name || '');
   const [description, setDescription] = useState(initial?.description || '');
@@ -243,6 +246,7 @@ function EpicForm({
   const [status, setStatus] = useState<Epic['status']>(initial?.status || 'planning');
   const [targetDate, setTargetDate] = useState(initial?.target_date || '');
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -256,6 +260,16 @@ function EpicForm({
       target_date: targetDate || null,
     });
     setSaving(false);
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    setDeleting(true);
+    try {
+      await onDelete();
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -295,11 +309,19 @@ function EpicForm({
           ))}
         </div>
       </div>
-      <div className="flex justify-end gap-2 pt-1">
-        <button type="button" onClick={onCancel} className="text-xs text-[#8888a0] border border-[#2a2a3a] px-3 py-1.5 rounded-md hover:bg-[#1a1a26] transition-all cursor-pointer">Cancel</button>
-        <button type="submit" disabled={saving} className="text-xs text-white bg-[#4a9eff] px-3 py-1.5 rounded-md hover:brightness-110 transition-all disabled:opacity-50 cursor-pointer">
-          {saving ? 'Saving...' : initial ? 'Update' : 'Create'}
-        </button>
+      <div className="flex justify-between items-center gap-2 pt-1">
+        {initial && onDelete ? (
+          <button type="button" onClick={handleDelete} disabled={deleting || saving}
+            className="text-xs text-[#f87171] hover:bg-[#f8717110] px-3 py-1.5 rounded-md transition-all disabled:opacity-50 cursor-pointer">
+            {deleting ? 'Deleting...' : 'Delete'}
+          </button>
+        ) : <span />}
+        <div className="flex gap-2">
+          <button type="button" onClick={onCancel} className="text-xs text-[#8888a0] border border-[#2a2a3a] px-3 py-1.5 rounded-md hover:bg-[#1a1a26] transition-all cursor-pointer">Cancel</button>
+          <button type="submit" disabled={saving || deleting} className="text-xs text-white bg-[#4a9eff] px-3 py-1.5 rounded-md hover:brightness-110 transition-all disabled:opacity-50 cursor-pointer">
+            {saving ? 'Saving...' : initial ? 'Update' : 'Create'}
+          </button>
+        </div>
       </div>
     </form>
   );
