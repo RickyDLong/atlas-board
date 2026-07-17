@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { BoardCard, getShieldAging } from './BoardCard';
+import { BoardCard, getShieldAging, getDueDateBadge } from './BoardCard';
 import { mockCards, mockCategories, createMockCard } from '@/__tests__/fixtures';
 import { PRIORITIES } from '@/constants/board';
 
@@ -78,6 +78,13 @@ describe('BoardCard', () => {
     render(<BoardCard {...defaultProps} card={overdueCard} />);
     const badge = screen.getByText(/overdue/i);
     expect(badge).toBeInTheDocument();
+  });
+
+  it('does not flag a past-due card as overdue once it reaches a done column', () => {
+    const overdueCard = { ...defaultCard, due_date: '2020-01-01' };
+    render(<BoardCard {...defaultProps} card={overdueCard} isDoneColumn={true} />);
+    expect(screen.queryByText(/overdue/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Jan 1')).toBeInTheDocument();
   });
 
   // ─── Shield aging indicator tests ─────────────────────────
@@ -211,5 +218,49 @@ describe('getShieldAging', () => {
   it('uses updated_at as fallback when column_changed_at is null', () => {
     const result = getShieldAging(makeCard(5, false), false);
     expect(result).toEqual({ count: 3, color: '#fb923c', label: '5 days in column' });
+  });
+});
+
+describe('getDueDateBadge', () => {
+  const makeCard = (dueInDays: number | null) => {
+    if (dueInDays === null) return createMockCard({ due_date: null });
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + dueInDays);
+    const due = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return createMockCard({ due_date: due });
+  };
+
+  it('returns null when the card has no due date', () => {
+    expect(getDueDateBadge(makeCard(null), false)).toBeNull();
+  });
+
+  it('labels a past-due card as overdue in red', () => {
+    expect(getDueDateBadge(makeCard(-5), false)).toEqual({ color: '#f87171', label: '5d overdue' });
+  });
+
+  it('labels a card due today in amber', () => {
+    expect(getDueDateBadge(makeCard(0), false)).toEqual({ color: '#fbbf24', label: 'Due today' });
+  });
+
+  it('labels a card due soon in orange', () => {
+    expect(getDueDateBadge(makeCard(2), false)).toEqual({ color: '#fb923c', label: '2d' });
+  });
+
+  it('labels a card due later in neutral grey', () => {
+    expect(getDueDateBadge(makeCard(30), false)).toEqual({ color: '#555568', label: '30d' });
+  });
+
+  it('drops overdue framing for a past-due card on a done column, keeping the date', () => {
+    const card = createMockCard({ due_date: '2020-01-01' });
+    expect(getDueDateBadge(card, true)).toEqual({ color: '#555568', label: 'Jan 1' });
+  });
+
+  it('drops due-today framing on a done column', () => {
+    expect(getDueDateBadge(makeCard(0), true)?.color).toEqual('#555568');
+  });
+
+  it('returns null on a done column when the card has no due date', () => {
+    expect(getDueDateBadge(makeCard(null), true)).toBeNull();
   });
 });

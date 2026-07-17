@@ -90,13 +90,16 @@ export function DetailModal({
               <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Due Date</div>
               <div className="text-[13px]">
                 {card.due_date ? (() => {
+                  const formatted = new Date(card.due_date).toLocaleDateString();
+                  if (col?.is_done) return <span style={{ color: '#e8e8f0' }}>{formatted}</span>;
+
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
                   const due = new Date(card.due_date + 'T00:00:00');
                   const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                   const isOverdue = diffDays < 0;
                   const color = isOverdue ? '#f87171' : diffDays === 0 ? '#fbbf24' : '#e8e8f0';
-                  return <span style={{ color }}>{new Date(card.due_date).toLocaleDateString()}{isOverdue ? ' (overdue)' : diffDays === 0 ? ' (today)' : ''}</span>;
+                  return <span style={{ color }}>{formatted}{isOverdue ? ' (overdue)' : diffDays === 0 ? ' (today)' : ''}</span>;
                 })() : '—'}
               </div>
             </div>

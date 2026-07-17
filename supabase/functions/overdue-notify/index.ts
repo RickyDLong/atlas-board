@@ -76,22 +76,22 @@ async function getOverdueCards(): Promise<UserOverdueData[]> {
 
     // For each board, find overdue cards
     for (const board of boards) {
-      // Get the "done" column (last by position)
+      // Get the "done" columns via the is_done flag, matching the rest of the app.
+      // Position is not a reliable signal — a done column can be reordered.
       const { data: columns, error: colError } = await supabase
         .from('columns')
-        .select('id, position')
+        .select('id')
         .eq('board_id', board.id)
-        .order('position', { ascending: false })
-        .limit(1);
+        .eq('is_done', true);
 
       if (colError) {
         console.warn(`Could not fetch columns for board ${board.id}:`, colError);
         continue;
       }
 
-      const doneColumnId = columns && columns.length > 0 ? columns[0].id : null;
+      const doneColumnIds = (columns ?? []).map((c) => c.id);
 
-      // Find overdue cards (due_date < today, not archived, not in done column)
+      // Find overdue cards (due_date < today, not archived, not in a done column)
       let query = supabase
         .from('cards')
         .select('id, title, due_date')
@@ -99,8 +99,8 @@ async function getOverdueCards(): Promise<UserOverdueData[]> {
         .lt('due_date', today)
         .is('archived_at', null);
 
-      if (doneColumnId) {
-        query = query.neq('column_id', doneColumnId);
+      if (doneColumnIds.length > 0) {
+        query = query.not('column_id', 'in', `(${doneColumnIds.join(',')})`);
       }
 
       const { data: cards, error: cardsError } = await query;

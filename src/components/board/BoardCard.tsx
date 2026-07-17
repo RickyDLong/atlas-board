@@ -33,6 +33,33 @@ export function getShieldAging(card: Card, isDoneColumn: boolean): { count: numb
   return { count: 4, color: '#f87171', label: `${days} days in column` };
 }
 
+/**
+ * Compute the due-date badge for a card.
+ * Done cards keep the date but lose all urgency framing, matching how trackers
+ * like Jira stop flagging a due date once the issue is resolved.
+ */
+export function getDueDateBadge(card: Card, isDoneColumn: boolean): { color: string; label: string } | null {
+  if (!card.due_date) return null;
+
+  const due = new Date(card.due_date + 'T00:00:00');
+
+  if (isDoneColumn) {
+    return { color: '#555568', label: due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const isOverdue = diffDays < 0;
+  const isDueToday = diffDays === 0;
+  const isDueSoon = diffDays > 0 && diffDays <= 2;
+
+  return {
+    color: isOverdue ? '#f87171' : isDueToday ? '#fbbf24' : isDueSoon ? '#fb923c' : '#555568',
+    label: isOverdue ? `${Math.abs(diffDays)}d overdue` : isDueToday ? 'Due today' : `${diffDays}d`,
+  };
+}
+
 export function BoardCard({ card, category, priority, subtaskProgress = null, cardLabels = [], isDoneColumn = false, showShields = true, isBlocked = false, onClick, onMenu }: BoardCardProps) {
   const [dragging, setDragging] = useState(false);
 
@@ -43,6 +70,7 @@ export function BoardCard({ card, category, priority, subtaskProgress = null, ca
   };
 
   const aging = getShieldAging(card, isDoneColumn);
+  const dueBadge = getDueDateBadge(card, isDoneColumn);
 
   return (
     <div
@@ -128,25 +156,14 @@ export function BoardCard({ card, category, priority, subtaskProgress = null, ca
               {subtaskProgress.done}/{subtaskProgress.total} ✓
             </span>
           )}
-          {card.due_date && (() => {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const due = new Date(card.due_date + 'T00:00:00');
-            const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            const isOverdue = diffDays < 0;
-            const isDueToday = diffDays === 0;
-            const isDueSoon = diffDays > 0 && diffDays <= 2;
-            const color = isOverdue ? '#f87171' : isDueToday ? '#fbbf24' : isDueSoon ? '#fb923c' : '#555568';
-            const label = isOverdue ? `${Math.abs(diffDays)}d overdue` : isDueToday ? 'Due today' : `${diffDays}d`;
-            return (
-              <span
-                className="text-[10px] font-medium px-1.5 py-0.5 rounded font-mono"
-                style={{ color, background: color + '18' }}
-              >
-                {label}
-              </span>
-            );
-          })()}
+          {dueBadge && (
+            <span
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded font-mono"
+              style={{ color: dueBadge.color, background: dueBadge.color + '18' }}
+            >
+              {dueBadge.label}
+            </span>
+          )}
         </div>
 
         {/* Right-side indicators — kept together and never pushed to a new line */}
