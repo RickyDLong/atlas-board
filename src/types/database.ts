@@ -213,8 +213,26 @@ export interface XPEvent {
   board_id: string;
   action: string;
   xp_amount: number;
+  /** Server-computed idempotency key; null on rows predating migration 028 */
+  dedupe_key: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
+}
+
+/** Outcome of a successful XP award. A deduped (already-granted) award yields null instead. */
+export interface XPAwardResult {
+  xpAwarded: number;
+  action: XPAction;
+  newTotalXP: number;
+  newLevel: number;
+  previousLevel: number;
+  leveledUp: boolean;
+  newTitle: string;
+  newBadges: string[];
+  streakUpdated: boolean;
+  currentStreak: number;
+  freezeUsed: boolean;
+  freezeTokensRemaining: number;
 }
 
 export interface UserLevel {

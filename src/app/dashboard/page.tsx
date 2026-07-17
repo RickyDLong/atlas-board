@@ -167,8 +167,9 @@ function DashboardContent() {
   // ─── Gamified card actions ─────────────────────────────────
   const gamifiedAddCard = useCallback(async (card: Omit<Card, 'id' | 'created_at' | 'updated_at'>) => {
     const newCard = await addCard(card as Card);
-    // Always track XP regardless of display toggle — toggle only controls UI
-    await gam.awardXP('card_create', { card_title: card.title });
+    // Always track XP regardless of display toggle — toggle only controls UI.
+    // Capped to one award per day server-side; a create/delete/create loop pays once.
+    await gam.award('card_create');
     // Quest progress — fire and forget, non-blocking
     if (userId && board?.id) {
       incrementQuestProgress(userId, board.id, 'create_cards').catch(() => {});
@@ -178,42 +179,32 @@ function DashboardContent() {
 
   const gamifiedMoveCard = useCallback(async (cardId: string, columnId: string) => {
     await moveCardToColumn(cardId, columnId);
-    // Check if moved to Done column (uses is_done flag)
+
     const doneColumn = columns.find(c => c.is_done);
-    // Always track completion XP — toggle only controls UI toasts/animations
-    if (doneColumn && columnId === doneColumn.id) {
-      const card = cards.find(c => c.id === cardId);
-      if (card) {
-        const cardSubtasks = subtasks[card.id] || [];
-        const allSubtasksDone = cardSubtasks.length > 0 && cardSubtasks.every(s => s.completed);
-        await gam.awardCardCompletion(card, {
-          all_subtasks_complete: allSubtasksDone,
-          subtask_count: cardSubtasks.length,
-        });
+    if (!doneColumn || columnId !== doneColumn.id) return;
 
-        // Epic completion bonus: if this was the last card in the epic, award 200 XP
-        if (card.epic_id) {
-          const epicCards = cards.filter(c => c.epic_id === card.epic_id && !c.archived_at);
-          // The moved card's column_id may not reflect in state yet — check by id
-          const allDone = epicCards.length > 0 && epicCards.every(c =>
-            c.id === cardId || c.column_id === doneColumn.id
-          );
-          if (allDone) {
-            const epic = epics.find(e => e.id === card.epic_id);
-            await gam.awardXP('epic_complete', { epic_id: card.epic_id, epic_name: epic?.name || 'Epic' });
-          }
-        }
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
 
-        // Quest progress — fire and forget, non-blocking
-        if (userId && board?.id) {
-          incrementQuestProgress(userId, board.id, 'complete_cards').catch(() => {});
-          if (card.epic_id) {
-            incrementQuestProgress(userId, board.id, 'complete_epic_card').catch(() => {});
-          }
-        }
+    // The server re-reads the card, confirms it really is in a done column, and
+    // returns null if this card was already completed once — so re-entering
+    // Conquered, or an undo/redo loop, awards nothing.
+    const awarded = await gam.award('card_complete', { cardId });
+    if (!awarded) return;
+
+    // Epic completion bonus — the server decides whether the epic is actually done.
+    if (card.epic_id) {
+      await gam.award('epic_complete', { epicId: card.epic_id });
+    }
+
+    // Quest progress — fire and forget, non-blocking
+    if (userId && board?.id) {
+      incrementQuestProgress(userId, board.id, 'complete_cards').catch(() => {});
+      if (card.epic_id) {
+        incrementQuestProgress(userId, board.id, 'complete_epic_card').catch(() => {});
       }
     }
-  }, [moveCardToColumn, columns, cards, epics, gam, userId, board, subtasks]);
+  }, [moveCardToColumn, columns, cards, gam, userId, board]);
 
   // ─── Undoable card actions ────────────────────────────────────
 
@@ -409,8 +400,9 @@ function DashboardContent() {
     if (clearDoneTimer) clearTimeout(clearDoneTimer);
     setClearDoneConfirm(false);
     const count = await archiveDoneCards(doneCol.id);
+    // Capped to one award per day server-side, so undo-then-clear-again pays once.
     if (count > 0 && userId && board?.id) {
-      await gam.awardXP('archive_batch', { count, column: doneCol.title });
+      await gam.award('archive_batch');
     }
   };
 

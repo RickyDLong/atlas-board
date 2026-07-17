@@ -1,13 +1,21 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { UserLevel, UserStreak, UserBadge, XPAction, Card } from '@/types/database';
+import type { UserLevel, UserStreak, UserBadge, XPAwardResult } from '@/types/database';
 import { BADGE_DEFINITIONS } from '@/constants/gamification';
 import * as gamification from '@/lib/gamification-actions';
 import { createClient } from '@/lib/supabase/client';
 
 /** How long to mute realtime after a local XP mutation (ms) */
 const REALTIME_MUTE_MS = 600;
+
+/** What the caller claims happened. The server decides what, if anything, it's worth. */
+export type AwardKind = 'card_complete' | 'epic_complete' | 'card_create' | 'archive_batch';
+
+export interface AwardIds {
+  cardId?: string;
+  epicId?: string;
+}
 
 export interface XPToast {
   id: string;
@@ -119,7 +127,7 @@ export function useGamification(userId: string | null, boardId: string | null, s
     return () => clearTimeout(timer);
   }, [xpToasts]);
 
-  const addToast = useCallback((result: gamification.XPAwardResult) => {
+  const addToast = useCallback((result: XPAwardResult) => {
     const id = String(++toastIdRef.current);
     const toast: XPToast = {
       id,
@@ -139,7 +147,7 @@ export function useGamification(userId: string | null, boardId: string | null, s
   }, []);
 
   // Shared post-award state update: mute realtime, update level/streak/badges, show toast
-  const handleAwardResult = useCallback((result: gamification.XPAwardResult) => {
+  const handleAwardResult = useCallback((result: XPAwardResult) => {
     muteRealtime();
     setLevel(prev => prev ? {
       ...prev,
@@ -162,26 +170,36 @@ export function useGamification(userId: string | null, boardId: string | null, s
     if (showToasts) addToast(result);
   }, [userId, muteRealtime, addToast, showToasts]);
 
-  // Award XP and update local state
-  const awardXP = useCallback(async (action: XPAction, metadata: Record<string, unknown> = {}) => {
+  /**
+   * Request an XP award from the server.
+   *
+   * The server decides whether anything is actually owed: it re-reads the card
+   * or epic and refuses to pay for a card that isn't really in a done column,
+   * and it returns null for an award already granted (a re-completed card, an
+   * undo/redo loop). A null result means "nothing happened" — no toast, no
+   * state change.
+   */
+  const award = useCallback(async (kind: AwardKind, ids: AwardIds = {}): Promise<XPAwardResult | null> => {
     if (!userId || !boardId) return null;
     try {
-      const result = await gamification.awardXP(userId, boardId, action, metadata);
-      handleAwardResult(result);
+      const res = await fetch('/api/gamification/award', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          boardId,
+          kind,
+          ...ids,
+          // Only the timezone: the server owns the date, and the amount.
+          tzOffsetMinutes: new Date().getTimezoneOffset(),
+        }),
+      });
+      if (!res.ok) return null;
+      const { result } = await res.json() as { result: XPAwardResult | null };
+      if (result) handleAwardResult(result);
       return result;
     } catch {
-      return null;
-    }
-  }, [userId, boardId, handleAwardResult]);
-
-  // Convenience: award XP for completing a card
-  const awardCardCompletion = useCallback(async (card: Card, extraMetadata: Record<string, unknown> = {}) => {
-    if (!userId || !boardId) return;
-    try {
-      const result = await gamification.awardCardCompletionXP(userId, boardId, card, extraMetadata);
-      if (result) handleAwardResult(result);
-    } catch {
       // Non-blocking
+      return null;
     }
   }, [userId, boardId, handleAwardResult]);
 
@@ -207,8 +225,7 @@ export function useGamification(userId: string | null, boardId: string | null, s
     xpInCurrentLevel,
     xpNeededForNext,
     levelColor,
-    awardXP,
-    awardCardCompletion,
+    award,
     dismissToast,
     refresh: loadGamification,
   };
