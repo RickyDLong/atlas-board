@@ -122,12 +122,15 @@ export function useBoard() {
     const card = cards.find(c => c.id === cardId);
     const nextPosition = cards.filter(c => c.column_id === columnId).length;
     const now = new Date().toISOString();
-    await actions.updateCard(cardId, { column_id: columnId, position: nextPosition, column_changed_at: now });
-    setCards(prev => prev.map(c => c.id === cardId ? { ...c, column_id: columnId, position: nextPosition, column_changed_at: now } : c));
+    const targetCol = columns.find(c => c.id === columnId);
+    // Stamp the completion time on entry into a done column, clear it on exit, so
+    // only the newest conquered time is ever kept.
+    const conquered_at = targetCol?.is_done ? now : null;
+    await actions.updateCard(cardId, { column_id: columnId, position: nextPosition, column_changed_at: now, conquered_at });
+    setCards(prev => prev.map(c => c.id === cardId ? { ...c, column_id: columnId, position: nextPosition, column_changed_at: now, conquered_at } : c));
     if (board) actions.logActivity(board.id, 'card_moved', { from_column: card?.column_id, to_column: columnId }, cardId).catch(() => {});
 
     // Recurring task: if moved to a done column, spawn a new card in the first column
-    const targetCol = columns.find(c => c.id === columnId);
     if (card?.recurrence_rule && targetCol?.is_done && board) {
       // Guard: check if a spawned copy already exists in a non-done column
       const alreadySpawned = cards.some(c =>
@@ -153,6 +156,7 @@ export function useBoard() {
           column_id: firstCol.id,
           position: cards.filter(c => c.column_id === firstCol.id).length,
           column_changed_at: now,
+          conquered_at: null,
           recurrence_rule: card.recurrence_rule,
           recurrence_source_id: card.id,
         });

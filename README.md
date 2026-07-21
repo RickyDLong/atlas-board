@@ -14,8 +14,14 @@ Atlas Board gives each authenticated user their own private Kanban board with:
 - **Cards** with priority levels (Critical / High / Medium / Low), effort sizing (XS–XL), descriptions, and notes
 - **Epics** — group related cards under a named epic with status tracking and target dates
 - **Categories** — color-coded labels for organizing work across different areas
-- **Collapsible filter bar** — filter by category, priority, or epic without visual clutter
+- **Collapsible filter bar** — filter by category, priority, or epic; saveable as named filters
 - **Per-user data isolation** — every user gets their own board; no cross-user data visibility
+
+Beyond the core board, it has grown to include: subtasks and card checklists, card labels, comments, card-to-card relationships (blocks / related / duplicates), file attachments, card templates, recurring tasks, time tracking (estimated vs. actual hours), a WIP limit per column, and multiple views (board, list, calendar, roadmap, stats, cumulative-flow diagram). Realtime sync keeps the board live across tabs.
+
+There's also an optional gamification layer — XP, levels and titles, badges, streak tracking with freeze tokens, and daily quests — toggleable per user.
+
+A private REST API under `/api/atlas/*` exposes the board core for scripting and agents (see `docs/ATLAS_API_SKILL.md`).
 
 ## Tech Stack
 
@@ -26,6 +32,7 @@ Atlas Board gives each authenticated user their own private Kanban board with:
 | Styling | [Tailwind CSS 4](https://tailwindcss.com) |
 | Database | [Supabase](https://supabase.com) (PostgreSQL) |
 | Auth | Supabase Auth (GitHub OAuth, Email/Password) |
+| Testing | [Vitest](https://vitest.dev) + Testing Library |
 | Hosting | [Vercel](https://vercel.com) |
 
 ## Architecture
@@ -37,19 +44,21 @@ src/
 │   ├── layout.tsx            # Root layout with metadata and favicon config
 │   ├── dashboard/
 │   │   └── page.tsx          # Main Kanban board (client component)
+│   ├── api/
+│   │   └── atlas/            # Private REST API (board, cards, columns, epics, categories)
 │   └── auth/
 │       ├── login/page.tsx    # Login with GitHub OAuth + email/password
 │       ├── signup/page.tsx   # Account creation
 │       └── callback/route.ts # OAuth callback handler
 ├── components/
-│   ├── board/
-│   │   ├── BoardColumn.tsx   # Column container with card list
-│   │   ├── BoardCard.tsx     # Individual card component
-│   │   ├── CardModal.tsx     # Card create/edit modal
-│   │   ├── EpicPanel.tsx     # Epic management side panel
-│   │   └── SettingsModal.tsx # Board settings (columns, categories)
+│   ├── board/                # BoardColumn, BoardCard, CardModal, EpicPanel, SettingsModal, ...
+│   ├── views/                # List, Calendar, Roadmap, Stats, CumulativeFlowDiagram
+│   └── gamification/         # XPBar, BadgePanel, StreakCalendar, DailyQuests, ...
 ├── hooks/
-│   └── useBoard.ts           # Client-side state management for board data
+│   ├── useBoard.ts           # Client-side state management for board data
+│   ├── useRealtimeBoard.ts   # Supabase realtime subscription
+│   ├── useGamification.ts    # XP / level / streak state
+│   └── useUndoRedo.ts        # Undo/redo for destructive actions
 ├── lib/
 │   ├── board-actions.ts      # All Supabase CRUD operations
 │   └── supabase/
@@ -60,21 +69,26 @@ src/
 │   └── database.ts           # TypeScript interfaces, constants, defaults
 ├── middleware.ts              # Supabase session refresh on every request
 supabase/
-└── migrations/
-    └── 001_initial_schema.sql # Full database schema with RLS policies
+├── migrations/               # 001_initial_schema.sql … 029_add_conquered_at.sql (run in order)
+└── functions/
+    └── overdue-notify/       # Edge function for overdue-card notifications
 ```
 
 ## Database
 
-Five tables, all secured with Row Level Security:
+The schema is built up across the numbered migrations in `supabase/migrations/` (001 through 029 at time of writing). Everything is secured with Row Level Security.
+
+The core five:
 
 - **boards** — one per user, owns everything below it
-- **columns** — board stages (position-ordered)
+- **columns** — board stages (position-ordered, with `is_done` and `wip_limit`)
 - **categories** — color-coded labels
 - **epics** — grouping mechanism with status lifecycle
 - **cards** — the actual work items, linked to a column and optionally to a category and epic
 
-Every table has RLS policies ensuring users can only access data belonging to their own boards. Child tables (columns, categories, epics, cards) enforce this through subqueries against the `boards` table.
+Later migrations add: subtasks, card_labels, card_templates, card_comments, card_relationships, card_attachments, saved_filters, activity_log, column_transitions, cfd_snapshots, user_preferences, recurring-task fields, and the gamification tables (XP events, user levels, streaks, badges, daily quests). See `MEMORY.md` for the running feature log.
+
+Every table has RLS policies ensuring users can only access data belonging to their own boards. Child tables enforce this through subqueries against the `boards` table (or `user_id` for the per-user gamification tables).
 
 ## Auth Flow
 
@@ -105,9 +119,9 @@ cd atlas-board
 npm install
 ```
 
-2. **Create a Supabase project** and run the migration
+2. **Create a Supabase project** and run the migrations
 
-Copy the contents of `supabase/migrations/001_initial_schema.sql` into your Supabase SQL Editor and execute it.
+Run every file in `supabase/migrations/` in numeric order (001 → 029) in your Supabase SQL Editor. Running only `001_initial_schema.sql` gives you the core board without subtasks, labels, gamification, and the rest.
 
 3. **Configure environment variables**
 

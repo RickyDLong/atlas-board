@@ -56,6 +56,7 @@ export interface Card {
   archived_at: string | null;
   position: number;
   column_changed_at: string | null;
+  conquered_at: string | null;
   recurrence_rule: RecurrenceRule | null;
   recurrence_source_id: string | null;
   created_at: string;

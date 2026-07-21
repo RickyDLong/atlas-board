@@ -20,6 +20,12 @@ Authorization: Bearer <ATLAS_INTERNAL_API_KEY>
 Read the API key from MEMORY.md in this workspace (look for `ATLAS_INTERNAL_API_KEY`).
 If it is not there, ask Ricky to provide it or check Vercel environment variables.
 
+This key is effectively a master credential: the routes authenticate the single
+static token and then use the Supabase **service-role** client, which bypasses
+row-level security and grants full read/write/delete on the whole board. Never
+print it to chat output or commit it. MEMORY.md is gitignored — keep it that way.
+If it ever leaks, rotate `ATLAS_INTERNAL_API_KEY` in Vercel and update MEMORY.md.
+
 ---
 
 ## Base URL
@@ -113,6 +119,9 @@ You can also pass `column_id`, `epic_id`, `category_id` as direct UUIDs if prefe
 ```json
 { "column": "Done" }
 ```
+Moving also stamps `column_changed_at`, and sets `conquered_at` when the target
+column has `is_done = true` (cleared when the card moves back out) — matching the
+board UI. Pass `column_id` instead of `column` to target a column by UUID.
 
 **POST /cards/:id/archive body:**
 ```json
@@ -160,6 +169,20 @@ To restore: `{ "unarchive": true }`
 | GET | `/categories` | List all categories with IDs, labels, colors |
 
 ---
+
+## Coverage
+
+This API exposes only the board core: **board, cards, columns, categories, epics**.
+The app has many features that have **no REST endpoints** and can only be changed
+in the web UI: subtasks, labels, card comments, card relationships (read-only via
+`/board` → `card_relationships`), attachments, card templates, saved filters,
+recurring tasks, time tracking beyond `estimated_hours`/`actual_hours`, and the
+entire gamification layer (XP, levels, badges, streaks, daily quests). If a
+request needs one of those, say so — don't assume a missing endpoint is a bug.
+
+Cards also carry fields the create/update endpoints don't accept (e.g.
+`recurrence_rule`, `conquered_at`); they appear in GET responses but are managed
+by the app, not this API.
 
 ## Board Reference
 

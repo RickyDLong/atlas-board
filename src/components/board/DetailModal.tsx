@@ -86,6 +86,12 @@ export function DetailModal({
               <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Status</div>
               <div className="text-[13px]">{col?.title || '—'}</div>
             </div>
+            {col?.is_done && card.conquered_at && (
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Conquered</div>
+                <div className="text-[13px]" style={{ color: '#34d399' }}>{new Date(card.conquered_at).toLocaleString()}</div>
+              </div>
+            )}
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Due Date</div>
               <div className="text-[13px]">

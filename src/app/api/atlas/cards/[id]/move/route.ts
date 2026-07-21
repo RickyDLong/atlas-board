@@ -44,12 +44,22 @@ export async function POST(
       return errorResponse('Provide column or column_id in request body', 400);
     }
 
+    // Stamp the completion time on entry into a done column, clear it on exit, so
+    // only the newest conquered time is kept — matching useBoard.moveCardToColumn.
+    const { data: targetCol } = await sb
+      .from('columns')
+      .select('is_done')
+      .eq('id', resolvedColumnId)
+      .single();
+    const now = new Date().toISOString();
+
     const { error } = await sb
       .from('cards')
       .update({
         column_id: resolvedColumnId,
-        column_changed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        column_changed_at: now,
+        conquered_at: targetCol?.is_done ? now : null,
+        updated_at: now,
       })
       .eq('id', id);
 

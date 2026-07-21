@@ -830,7 +830,7 @@ function DashboardContent() {
           onEdit={() => { setEditingCard(detailCard); setDetailCard(null); }}
           onClose={() => setDetailCard(null)}
           onDelete={async () => { await undoableRemoveCard(detailCard.id); setDetailCard(null); }}
-          onMove={async (colId) => { await undoableMoveCard(detailCard.id, colId); setDetailCard({ ...detailCard, column_id: colId }); }}
+          onMove={async (colId) => { await undoableMoveCard(detailCard.id, colId); const isDone = columns.find(c => c.id === colId)?.is_done; setDetailCard({ ...detailCard, column_id: colId, conquered_at: isDone ? new Date().toISOString() : null }); }}
           onViewEpic={(epicId) => { setSelectedEpicId(epicId); setShowEpicPanel(true); setDetailCard(null); }}
           onArchive={doneCol && detailCard.column_id === doneCol.id ? async () => { await undoableArchiveCard(detailCard.id); setDetailCard(null); } : undefined}
           onLogTime={async (minutes) => {
