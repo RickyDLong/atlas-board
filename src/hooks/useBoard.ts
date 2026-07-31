@@ -1,32 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Board, Column, Category, Card, Epic, Subtask, ColumnTransition, CfdSnapshot, SavedFilter, Label, CardLabel, CardTemplate, CardRelationship, RelationshipType, RecurrenceRule } from '@/types/database';
+import type { Board, Column, Category, Card, Epic, Subtask, ColumnTransition, CfdSnapshot, SavedFilter, Label, CardLabel, CardTemplate, CardRelationship, RelationshipType } from '@/types/database';
 import * as actions from '@/lib/board-actions';
+import { computeNextDueDate } from '@/lib/recurrence';
 import { useDebouncedEditor } from '@/hooks/useDebouncedEditor';
-
-function computeNextDueDate(currentDue: string, rule: RecurrenceRule): string {
-  const d = new Date(currentDue + 'T00:00:00');
-  switch (rule) {
-    case 'daily': d.setDate(d.getDate() + 1); break;
-    case 'weekly': d.setDate(d.getDate() + 7); break;
-    case 'biweekly': d.setDate(d.getDate() + 14); break;
-    case 'monthly': {
-      const targetMonth = (d.getMonth() + 1) % 12;
-      d.setMonth(d.getMonth() + 1);
-      // Clamp overflow (e.g. Jan 31 → Mar 3 → Feb 28)
-      if (d.getMonth() !== targetMonth) d.setDate(0);
-      break;
-    }
-    case 'quarterly': {
-      const targetMonth = (d.getMonth() + 3) % 12;
-      d.setMonth(d.getMonth() + 3);
-      if (d.getMonth() !== targetMonth) d.setDate(0);
-      break;
-    }
-  }
-  return d.toISOString().split('T')[0];
-}
 
 export function useBoard() {
   const [board, setBoard] = useState<Board | null>(null);

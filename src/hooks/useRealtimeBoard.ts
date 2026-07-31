@@ -183,7 +183,9 @@ export function useRealtimeBoard(): PublicBoardAPI {
       { event: 'INSERT', schema: 'public', table: 'cards', filter: `board_id=eq.${board.id}` },
       (payload: PostgresPayload<Card>) => {
         if (muteRealtimeRef.current) return;
-        __setCards((prev) => [...prev, payload.new]);
+        // Idempotent: skip if we already hold this row (e.g. our own optimistic
+        // insert, or a duplicate CDC delivery) so it can't be appended twice.
+        __setCards((prev) => (prev.some((c) => c.id === payload.new.id) ? prev : [...prev, payload.new]));
       }
     );
 
@@ -211,7 +213,7 @@ export function useRealtimeBoard(): PublicBoardAPI {
       { event: 'INSERT', schema: 'public', table: 'columns', filter: `board_id=eq.${board.id}` },
       (payload: PostgresPayload<Column>) => {
         if (muteRealtimeRef.current) return;
-        __setColumns((prev) => [...prev, payload.new]);
+        __setColumns((prev) => (prev.some((c) => c.id === payload.new.id) ? prev : [...prev, payload.new]));
       }
     );
 
@@ -239,7 +241,7 @@ export function useRealtimeBoard(): PublicBoardAPI {
       { event: 'INSERT', schema: 'public', table: 'categories', filter: `board_id=eq.${board.id}` },
       (payload: PostgresPayload<Category>) => {
         if (muteRealtimeRef.current) return;
-        __setCategories((prev) => [...prev, payload.new]);
+        __setCategories((prev) => (prev.some((c) => c.id === payload.new.id) ? prev : [...prev, payload.new]));
       }
     );
 
@@ -267,7 +269,7 @@ export function useRealtimeBoard(): PublicBoardAPI {
       { event: 'INSERT', schema: 'public', table: 'epics', filter: `board_id=eq.${board.id}` },
       (payload: PostgresPayload<Epic>) => {
         if (muteRealtimeRef.current) return;
-        __setEpics((prev) => [...prev, payload.new]);
+        __setEpics((prev) => (prev.some((e) => e.id === payload.new.id) ? prev : [...prev, payload.new]));
       }
     );
 
@@ -296,10 +298,11 @@ export function useRealtimeBoard(): PublicBoardAPI {
       (payload: PostgresPayload<Subtask>) => {
         if (muteRealtimeRef.current) return;
         if (!cardIdsRef.current.has(payload.new.card_id)) return;
-        __setSubtasks((prev) => ({
-          ...prev,
-          [payload.new.card_id]: [...(prev[payload.new.card_id] || []), payload.new],
-        }));
+        __setSubtasks((prev) => {
+          const list = prev[payload.new.card_id] || [];
+          if (list.some((s) => s.id === payload.new.id)) return prev;
+          return { ...prev, [payload.new.card_id]: [...list, payload.new] };
+        });
       }
     );
 

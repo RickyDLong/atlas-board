@@ -37,6 +37,20 @@ export function SettingsModal({
   const [tab, setTab] = useState<'categories' | 'columns' | 'labels' | 'notifications'>('categories');
   const [prefs, setPrefs] = useState<UserPreferences | null>(null);
 
+  // Guard against double-submit: a rapid second click while a create is in
+  // flight would insert a duplicate row (categories/columns/labels have no
+  // other guard). Block additional adds until the insert resolves.
+  const [adding, setAdding] = useState(false);
+  const guardedAdd = async (fn: () => Promise<unknown>) => {
+    if (adding) return;
+    setAdding(true);
+    try {
+      await fn();
+    } finally {
+      setAdding(false);
+    }
+  };
+
   useEffect(() => {
     if (!userId) return;
 
@@ -145,8 +159,8 @@ export function SettingsModal({
                     className="text-[#555568] hover:text-[#f87171] text-sm px-1 rounded transition-all cursor-pointer">&times;</button>
                 </div>
               ))}
-              <button onClick={() => onAddCategory('New Category', PRESET_COLORS[categories.length % PRESET_COLORS.length])}
-                className="w-full py-2.5 border border-dashed border-[#2a2a3a] rounded-lg text-[#555568] text-xs hover:border-[#4a9eff] hover:text-[#4a9eff] transition-all cursor-pointer">
+              <button disabled={adding} onClick={() => guardedAdd(() => onAddCategory('New Category', PRESET_COLORS[categories.length % PRESET_COLORS.length]))}
+                className="w-full py-2.5 border border-dashed border-[#2a2a3a] rounded-lg text-[#555568] text-xs hover:border-[#4a9eff] hover:text-[#4a9eff] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                 + Add Category
               </button>
             </>
@@ -181,8 +195,8 @@ export function SettingsModal({
                   <button onClick={() => onRemoveColumn(col.id)} className="text-[#555568] hover:text-[#f87171] text-sm px-1 rounded transition-all cursor-pointer">&times;</button>
                 </div>
               ))}
-              <button onClick={() => onAddColumn('New Column', PRESET_COLORS[(columns.length + 4) % PRESET_COLORS.length])}
-                className="w-full py-2.5 border border-dashed border-[#2a2a3a] rounded-lg text-[#555568] text-xs hover:border-[#4a9eff] hover:text-[#4a9eff] transition-all cursor-pointer">
+              <button disabled={adding} onClick={() => guardedAdd(() => onAddColumn('New Column', PRESET_COLORS[(columns.length + 4) % PRESET_COLORS.length]))}
+                className="w-full py-2.5 border border-dashed border-[#2a2a3a] rounded-lg text-[#555568] text-xs hover:border-[#4a9eff] hover:text-[#4a9eff] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                 + Add Column
               </button>
             </>
@@ -207,8 +221,8 @@ export function SettingsModal({
                     className="text-[#555568] hover:text-[#f87171] text-sm px-1 rounded transition-all cursor-pointer">&times;</button>
                 </div>
               ))}
-              <button onClick={() => onAddLabel('New Label', PRESET_COLORS[labels.length % PRESET_COLORS.length])}
-                className="w-full py-2.5 border border-dashed border-[#2a2a3a] rounded-lg text-[#555568] text-xs hover:border-[#4a9eff] hover:text-[#4a9eff] transition-all cursor-pointer">
+              <button disabled={adding} onClick={() => guardedAdd(() => onAddLabel('New Label', PRESET_COLORS[labels.length % PRESET_COLORS.length]))}
+                className="w-full py-2.5 border border-dashed border-[#2a2a3a] rounded-lg text-[#555568] text-xs hover:border-[#4a9eff] hover:text-[#4a9eff] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                 + Add Label
               </button>
             </>
