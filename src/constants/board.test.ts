@@ -92,8 +92,8 @@ describe('board constants', () => {
   });
 
   describe('PRESET_COLORS', () => {
-    it('has 18 preset colors', () => {
-      expect(PRESET_COLORS).toHaveLength(18);
+    it('has 30 preset colors', () => {
+      expect(PRESET_COLORS).toHaveLength(30);
     });
 
     it('all colors are valid hex', () => {
