@@ -66,7 +66,7 @@ export function DetailModal({
           {card.description && (
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1">Description</div>
-              <div className="text-[13px] text-[#e8e8f0] leading-relaxed">{card.description}</div>
+              <div className="text-[13px] text-[#e8e8f0] whitespace-pre-wrap leading-relaxed">{card.description}</div>
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
