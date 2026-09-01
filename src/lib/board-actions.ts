@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import type { Board, Column, Category, Card, Epic, Subtask, UserPreferences, ColumnTransition, CfdSnapshot, SavedFilter, Label, CardLabel, CardTemplate, ActivityLogEntry, ActivityAction, CardComment, CardRelationship, RelationshipType, CardAttachment } from '@/types/database';
+import type { Board, Column, Category, Card, Epic, Subtask, UserPreferences, ColumnTransition, CfdSnapshot, SavedFilter, Label, CardLabel, CardTemplate, ActivityLogEntry, ActivityAction, CardComment, CardRelationship, RelationshipType, CardAttachment, CardFlag } from '@/types/database';
 import { DEFAULT_COLUMNS, DEFAULT_CATEGORIES } from '@/constants/board';
 
 const supabase = createClient();
@@ -408,6 +408,29 @@ export async function addCardLabel(cardId: string, labelId: string): Promise<voi
 
 export async function removeCardLabel(cardId: string, labelId: string): Promise<void> {
   const { error } = await supabase.from('card_labels').delete().eq('card_id', cardId).eq('label_id', labelId);
+  if (error) throw error;
+}
+
+// ─── Card Flags ─────────────────────────────────────────────
+
+export async function getCardFlags(boardId: string): Promise<CardFlag[]> {
+  const { data, error } = await supabase.from('card_flags').select('*').eq('board_id', boardId).order('created_at');
+  if (error) throw error;
+  return data as CardFlag[];
+}
+
+export async function addCardFlag(cardId: string, boardId: string, label: string, color: string): Promise<CardFlag> {
+  const { data, error } = await supabase
+    .from('card_flags')
+    .insert({ card_id: cardId, board_id: boardId, label, color })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as CardFlag;
+}
+
+export async function removeCardFlag(id: string): Promise<void> {
+  const { error } = await supabase.from('card_flags').delete().eq('id', id);
   if (error) throw error;
 }
 

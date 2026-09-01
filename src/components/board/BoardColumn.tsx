@@ -1,6 +1,6 @@
 'use client';
 
-import type { Column, Card, Category, Subtask, Label, CardLabel } from '@/types/database';
+import type { Column, Card, Category, Subtask, Label, CardLabel, CardFlag } from '@/types/database';
 import { PRIORITIES } from '@/constants/board';
 import { BoardCard } from './BoardCard';
 import { useGamificationMode } from '@/contexts/GamificationModeContext';
@@ -13,6 +13,8 @@ interface BoardColumnProps {
   subtasks?: Record<string, Subtask[]>;
   labels?: Label[];
   cardLabelsMap?: CardLabel[];
+  cardFlags?: CardFlag[];
+  relationshipCounts?: Map<string, number>;
   blockedCardIds?: Set<string>;
   onAddCard: (columnId: string) => void;
   onCardClick: (card: Card) => void;
@@ -21,7 +23,7 @@ interface BoardColumnProps {
 }
 
 export function BoardColumn({
-  column, cards, categories, subtasks = {}, labels = [], cardLabelsMap = [], blockedCardIds = new Set(), onAddCard, onCardClick, onCardMenu, onDrop,
+  column, cards, categories, subtasks = {}, labels = [], cardLabelsMap = [], cardFlags = [], relationshipCounts = new Map(), blockedCardIds = new Set(), onAddCard, onCardClick, onCardMenu, onDrop,
 }: BoardColumnProps) {
   const { columnDisplayName, isGamified } = useGamificationMode();
 
@@ -93,6 +95,7 @@ export function BoardColumn({
             done: cardSubtasks.filter(s => s.completed).length,
             total: cardSubtasks.length,
           } : null;
+          const thisCardFlags = cardFlags.filter(f => f.card_id === card.id);
           return (
             <BoardCard
               key={card.id}
@@ -101,6 +104,8 @@ export function BoardColumn({
               priority={pri}
               subtaskProgress={subtaskProgress}
               cardLabels={thisCardLabels}
+              flags={thisCardFlags}
+              relationshipCount={relationshipCounts.get(card.id) ?? 0}
               isDoneColumn={isDone}
               showShields={isGamified}
               isBlocked={blockedCardIds.has(card.id)}

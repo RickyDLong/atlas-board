@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { useBoard } from '@/hooks/useBoard';
 import { createClient } from '@/lib/supabase/client';
-import type { Card, Column, Category, Epic, Subtask, ColumnTransition } from '@/types/database';
+import type { Card, Column, Category, Epic, Subtask, ColumnTransition, CardFlag } from '@/types/database';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 type RealtimeBoardReturn = ReturnType<typeof useBoard>;
@@ -14,6 +14,7 @@ type BoardHookWithSetters = RealtimeBoardReturn & {
   __setEpics: (fn: (prev: Epic[]) => Epic[] | Epic[]) => void;
   __setSubtasks: (fn: (prev: Record<string, Subtask[]>) => Record<string, Subtask[]>) => void;
   __setTransitions: (fn: (prev: ColumnTransition[]) => ColumnTransition[] | ColumnTransition[]) => void;
+  __setCardFlags: (fn: (prev: CardFlag[]) => CardFlag[] | CardFlag[]) => void;
 };
 
 type PostgresPayload<T> = {
@@ -26,13 +27,13 @@ type PostgresPayload<T> = {
 const REALTIME_MUTE_MS = 500;
 
 // Strip internal setters from the public API
-type PublicBoardAPI = Omit<RealtimeBoardReturn, '__setCards' | '__setColumns' | '__setCategories' | '__setEpics' | '__setSubtasks' | '__setTransitions'>;
+type PublicBoardAPI = Omit<RealtimeBoardReturn, '__setCards' | '__setColumns' | '__setCategories' | '__setEpics' | '__setSubtasks' | '__setTransitions' | '__setCardFlags'>;
 
 export function useRealtimeBoard(): PublicBoardAPI {
   const boardHook = useBoard();
   const {
-    board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, loading, error,
-    __setCards, __setColumns, __setCategories, __setEpics, __setSubtasks,
+    board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, cardFlags, loading, error,
+    __setCards, __setColumns, __setCategories, __setEpics, __setSubtasks, __setCardFlags,
     // Destructure all action methods so we can wrap them
     addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards, archiveDoneCards,
     addEpic, editEpic, removeEpic,
@@ -42,6 +43,7 @@ export function useRealtimeBoard(): PublicBoardAPI {
     addLabel, editLabel, removeLabel, toggleCardLabel,
     addCardTemplate, removeCardTemplate,
     addCardRelationship, removeCardRelationship,
+    addFlag, removeFlag,
     addSavedFilter, removeSavedFilter,
     refresh,
   } = boardHook as BoardHookWithSetters;
@@ -336,6 +338,25 @@ export function useRealtimeBoard(): PublicBoardAPI {
       }
     );
 
+    // Subscribe to card flags
+    channel.on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'card_flags', filter: `board_id=eq.${board.id}` },
+      (payload: PostgresPayload<CardFlag>) => {
+        if (muteRealtimeRef.current) return;
+        __setCardFlags((prev) => (prev.some((f) => f.id === payload.new.id) ? prev : [...prev, payload.new]));
+      }
+    );
+
+    channel.on(
+      'postgres_changes',
+      { event: 'DELETE', schema: 'public', table: 'card_flags', filter: `board_id=eq.${board.id}` },
+      (payload: PostgresPayload<CardFlag>) => {
+        if (muteRealtimeRef.current) return;
+        __setCardFlags((prev) => prev.filter((f) => f.id !== payload.old.id));
+      }
+    );
+
     // Subscribe to the channel
     channel.subscribe();
     channelRef.current = channel;
@@ -347,11 +368,11 @@ export function useRealtimeBoard(): PublicBoardAPI {
       }
       if (muteTimerRef.current) clearTimeout(muteTimerRef.current);
     };
-  }, [board, __setCards, __setColumns, __setCategories, __setEpics, __setSubtasks]);
+  }, [board, __setCards, __setColumns, __setCategories, __setEpics, __setSubtasks, __setCardFlags]);
 
   // ─── Return wrapped API ─────────────────────────────────
   return useMemo(() => ({
-    board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, loading, error,
+    board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, cardFlags, loading, error,
     addCard: mutedAddCard,
     editCard: mutedEditCard,
     removeCard: mutedRemoveCard,
@@ -374,6 +395,7 @@ export function useRealtimeBoard(): PublicBoardAPI {
     addLabel, editLabel, removeLabel, toggleCardLabel,
     addCardTemplate, removeCardTemplate,
     addCardRelationship, removeCardRelationship,
+    addFlag, removeFlag,
     addSavedFilter,
     removeSavedFilter,
     addSubtask: mutedAddSubtask,
@@ -382,13 +404,13 @@ export function useRealtimeBoard(): PublicBoardAPI {
     editSubtask: mutedEditSubtask,
     refresh,
   }), [
-    board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, loading, error,
+    board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, cardFlags, loading, error,
     mutedAddCard, mutedEditCard, mutedRemoveCard, mutedMoveCardToColumn,
     mutedArchiveCard, mutedUnarchiveCard, mutedArchiveEpicCards, mutedArchiveDoneCards,
     mutedAddEpic, mutedEditEpic, mutedRemoveEpic,
     mutedAddColumn, mutedEditColumn, mutedRemoveColumn, mutedReorderColumns,
     mutedAddCategory, mutedEditCategory, mutedRemoveCategory,
-    loadSubtasks, addLabel, editLabel, removeLabel, toggleCardLabel, addCardTemplate, removeCardTemplate, addCardRelationship, removeCardRelationship, addSavedFilter, removeSavedFilter, mutedAddSubtask, mutedToggleSubtask, mutedRemoveSubtask, mutedEditSubtask,
+    loadSubtasks, addLabel, editLabel, removeLabel, toggleCardLabel, addCardTemplate, removeCardTemplate, addCardRelationship, removeCardRelationship, addFlag, removeFlag, addSavedFilter, removeSavedFilter, mutedAddSubtask, mutedToggleSubtask, mutedRemoveSubtask, mutedEditSubtask,
     refresh,
   ]);
 }

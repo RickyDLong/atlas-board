@@ -17,12 +17,13 @@ export async function GET(request: NextRequest): Promise<Response> {
     const sb = getAdminClient();
     const boardId = await getBoardId();
 
-    const [columns, cards, epics, categories, cardRelationships] = await Promise.all([
+    const [columns, cards, epics, categories, cardRelationships, cardFlags] = await Promise.all([
       sb.from('columns').select('*').eq('board_id', boardId).order('position'),
       sb.from('cards').select('*').eq('board_id', boardId).is('archived_at', null).order('position'),
       sb.from('epics').select('*').eq('board_id', boardId).order('created_at'),
       sb.from('categories').select('*').eq('board_id', boardId).order('position'),
       sb.from('card_relationships').select('*').eq('board_id', boardId),
+      sb.from('card_flags').select('*').eq('board_id', boardId),
     ]);
 
     return Response.json({
@@ -32,6 +33,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       epics: epics.data ?? [],
       categories: categories.data ?? [],
       card_relationships: cardRelationships.data ?? [],
+      card_flags: cardFlags.data ?? [],
     });
   } catch (err) {
     return errorResponse(String(err), 500);

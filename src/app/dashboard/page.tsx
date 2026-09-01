@@ -50,7 +50,7 @@ export default function DashboardPage() {
 
 function DashboardContent() {
   const {
-    board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, loading, error,
+    board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, cardFlags, loading, error,
     addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards, archiveDoneCards,
     addEpic, editEpic, removeEpic,
     addColumn, editColumn, removeColumn, reorderColumns,
@@ -59,6 +59,7 @@ function DashboardContent() {
     addLabel, editLabel, removeLabel, toggleCardLabel,
     addCardTemplate, removeCardTemplate,
     addCardRelationship, removeCardRelationship,
+    addFlag, removeFlag,
     addSavedFilter, removeSavedFilter,
     refresh,
   } = useRealtimeBoard();
@@ -127,6 +128,8 @@ function DashboardContent() {
   const [filterCategories, setFilterCategories] = useState<string[]>([]);
   const [filterPriority, setFilterPriority] = useState<string | null>(null);
   const [filterEpicId, setFilterEpicId] = useState<string | null>(null);
+  const [filterBlocked, setFilterBlocked] = useState(false);
+  const [filterFlagged, setFilterFlagged] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
@@ -344,6 +347,21 @@ function DashboardContent() {
     return blocked;
   }, [cardRelationships, cards, columns]);
 
+  // Cards carrying at least one flag
+  const flaggedCardIds = useMemo(() => {
+    return new Set(cardFlags.map(f => f.card_id));
+  }, [cardFlags]);
+
+  // How many relationships (either direction) each card participates in
+  const relationshipCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const rel of cardRelationships) {
+      counts.set(rel.source_card_id, (counts.get(rel.source_card_id) ?? 0) + 1);
+      counts.set(rel.target_card_id, (counts.get(rel.target_card_id) ?? 0) + 1);
+    }
+    return counts;
+  }, [cardRelationships]);
+
   const handleSignOut = async () => {
     await signOut();
     router.push('/auth/login');
@@ -375,6 +393,8 @@ function DashboardContent() {
     if (filterCategories.length > 0 && !filterCategories.includes(card.category_id || '')) return false;
     if (filterPriority && card.priority !== filterPriority) return false;
     if (filterEpicId && card.epic_id !== filterEpicId) return false;
+    if (filterBlocked && !blockedCardIds.has(card.id)) return false;
+    if (filterFlagged && !flaggedCardIds.has(card.id)) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return card.title.toLowerCase().includes(q) || (card.description || '').toLowerCase().includes(q);
@@ -546,7 +566,7 @@ function DashboardContent() {
       <div className="flex items-center gap-1.5 px-6 py-3 border-b border-[#1e1e2e] bg-[#12121a] flex-wrap">
         <button
           onClick={() => setShowFilters(prev => !prev)}
-          className={`px-3 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer ${showFilters || filterCategories.length > 0 || filterPriority || filterEpicId ? 'bg-[#1a1a26] border-[#4a9eff] text-[#4a9eff]' : 'bg-transparent border-[#2a2a3a] text-[#8888a0]'}`}
+          className={`px-3 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer ${showFilters || filterCategories.length > 0 || filterPriority || filterEpicId || filterBlocked || filterFlagged ? 'bg-[#1a1a26] border-[#4a9eff] text-[#4a9eff]' : 'bg-transparent border-[#2a2a3a] text-[#8888a0]'}`}
         >
           &#9707; Filter
         </button>
@@ -589,9 +609,27 @@ function DashboardContent() {
             </button>
           );
         })()}
-        {(filterCategories.length > 0 || filterPriority || filterEpicId) && (
+        {filterBlocked && (
           <button
-            onClick={() => { setFilterCategories([]); setFilterPriority(null); setFilterEpicId(null); }}
+            onClick={() => setFilterBlocked(false)}
+            className="px-3 py-1 rounded-md text-xs font-medium border bg-[#1a1a26] transition-all cursor-pointer"
+            style={{ borderColor: '#f87171', color: '#f87171' }}
+          >
+            🔒 Blocked &times;
+          </button>
+        )}
+        {filterFlagged && (
+          <button
+            onClick={() => setFilterFlagged(false)}
+            className="px-3 py-1 rounded-md text-xs font-medium border bg-[#1a1a26] transition-all cursor-pointer"
+            style={{ borderColor: '#fbbf24', color: '#fbbf24' }}
+          >
+            🚩 Flagged &times;
+          </button>
+        )}
+        {(filterCategories.length > 0 || filterPriority || filterEpicId || filterBlocked || filterFlagged) && (
+          <button
+            onClick={() => { setFilterCategories([]); setFilterPriority(null); setFilterEpicId(null); setFilterBlocked(false); setFilterFlagged(false); }}
             className="px-3 py-1 rounded-md text-xs font-medium text-[#f87171] border-transparent cursor-pointer"
           >
             Clear all
@@ -681,6 +719,23 @@ function DashboardContent() {
               ))}
             </div>
           )}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[#555568] text-[10px] uppercase tracking-wider font-semibold w-16 shrink-0">Status</span>
+            <button
+              onClick={() => setFilterBlocked(prev => !prev)}
+              className={`px-3 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer ${filterBlocked ? 'bg-[#1a1a26]' : 'bg-transparent'}`}
+              style={filterBlocked ? { borderColor: '#f87171', color: '#f87171' } : { borderColor: '#2a2a3a', color: '#8888a0' }}
+            >
+              🔒 Blocked
+            </button>
+            <button
+              onClick={() => setFilterFlagged(prev => !prev)}
+              className={`px-3 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer ${filterFlagged ? 'bg-[#1a1a26]' : 'bg-transparent'}`}
+              style={filterFlagged ? { borderColor: '#fbbf24', color: '#fbbf24' } : { borderColor: '#2a2a3a', color: '#8888a0' }}
+            >
+              🚩 Flagged
+            </button>
+          </div>
         </div>
       )}
 
@@ -704,6 +759,8 @@ function DashboardContent() {
               subtasks={subtasks}
               labels={labels}
               cardLabelsMap={cardLabels}
+              cardFlags={cardFlags}
+              relationshipCounts={relationshipCounts}
               blockedCardIds={blockedCardIds}
               onAddCard={(colId) => { setAddToColumnId(colId); setShowAddModal(true); }}
               onCardClick={(card) => setDetailCard(card)}
@@ -843,6 +900,9 @@ function DashboardContent() {
           onAddRelationship={async (s, t, type) => addCardRelationship(s, t, type)}
           onRemoveRelationship={async (id) => removeCardRelationship(id)}
           onViewCard={(id) => { const c = cards.find(x => x.id === id); if (c) setDetailCard(c); }}
+          cardFlags={cardFlags.filter(f => f.card_id === detailCard.id)}
+          onAddFlag={async (label, color) => { await addFlag(detailCard.id, label, color); }}
+          onRemoveFlag={async (id) => { await removeFlag(id); }}
         />
       )}
 

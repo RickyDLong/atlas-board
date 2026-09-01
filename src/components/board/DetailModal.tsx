@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Card, Category, Column, Epic, CardRelationship, RelationshipType } from '@/types/database';
+import type { Card, Category, Column, Epic, CardRelationship, RelationshipType, CardFlag } from '@/types/database';
 import { PRIORITIES } from '@/constants/board';
 import { ActivityLog } from './ActivityLog';
 import { CardComments } from './CardComments';
@@ -26,15 +26,20 @@ interface DetailModalProps {
   onAddRelationship?: (sourceCardId: string, targetCardId: string, type: RelationshipType) => Promise<CardRelationship | undefined>;
   onRemoveRelationship?: (id: string) => Promise<void>;
   onViewCard?: (cardId: string) => void;
+  cardFlags?: CardFlag[];
+  onAddFlag?: (label: string, color: string) => Promise<void>;
+  onRemoveFlag?: (id: string) => Promise<void>;
 }
 
 export function DetailModal({
   card, categories, columns, epics, onEdit, onClose, onDelete, onMove, onViewEpic, onArchive, onLogTime,
   allCards = [], cardRelationships = [], onAddRelationship, onRemoveRelationship, onViewCard,
+  cardFlags = [], onAddFlag, onRemoveFlag,
 }: DetailModalProps) {
   const [showActivity, setShowActivity] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showPomodoro, setShowPomodoro] = useState(false);
+  const [flagInput, setFlagInput] = useState('');
   const cat = categories.find(c => c.id === card.category_id);
   const pri = PRIORITIES.find(p => p.id === card.priority);
   const col = columns.find(c => c.id === card.column_id);
@@ -116,6 +121,42 @@ export function DetailModal({
               <div className="text-[13px] text-[#e8e8f0] whitespace-pre-wrap leading-relaxed">{card.notes}</div>
             </div>
           )}
+          {/* Flags */}
+          {onAddFlag && onRemoveFlag && (
+            <div className="border-t border-[#1e1e2e] pt-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#555568] mb-1.5">Flags</div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {cardFlags.map(f => (
+                  <span
+                    key={f.id}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded"
+                    style={{ background: f.color + '22', color: f.color, border: `1px solid ${f.color}44` }}
+                  >
+                    🚩 {f.label}
+                    <button onClick={() => onRemoveFlag(f.id)} className="hover:brightness-125 cursor-pointer" title="Remove flag">&times;</button>
+                  </span>
+                ))}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const label = flagInput.trim();
+                    if (!label) return;
+                    onAddFlag(label, '#fbbf24');
+                    setFlagInput('');
+                  }}
+                  className="inline-flex"
+                >
+                  <input
+                    value={flagInput}
+                    onChange={(e) => setFlagInput(e.target.value)}
+                    placeholder="Add a flag..."
+                    className="bg-[#0a0a0f] border border-[#2a2a3a] rounded-md px-2 py-1 text-[12px] text-[#e8e8f0] outline-none focus:border-[#fbbf24] w-32 placeholder:text-[#555568]"
+                  />
+                </form>
+              </div>
+            </div>
+          )}
+
           {/* Relationships */}
           {onAddRelationship && onRemoveRelationship && (
             <div className="border-t border-[#1e1e2e] pt-3">

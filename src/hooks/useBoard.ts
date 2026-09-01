@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Board, Column, Category, Card, Epic, Subtask, ColumnTransition, CfdSnapshot, SavedFilter, Label, CardLabel, CardTemplate, CardRelationship, RelationshipType } from '@/types/database';
+import type { Board, Column, Category, Card, Epic, Subtask, ColumnTransition, CfdSnapshot, SavedFilter, Label, CardLabel, CardTemplate, CardRelationship, RelationshipType, CardFlag } from '@/types/database';
 import * as actions from '@/lib/board-actions';
 import { computeNextDueDate } from '@/lib/recurrence';
 import { useDebouncedEditor } from '@/hooks/useDebouncedEditor';
@@ -20,6 +20,7 @@ export function useBoard() {
   const [cardLabels, setCardLabels] = useState<CardLabel[]>([]);
   const [cardTemplates, setCardTemplates] = useState<CardTemplate[]>([]);
   const [cardRelationships, setCardRelationships] = useState<CardRelationship[]>([]);
+  const [cardFlags, setCardFlags] = useState<CardFlag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +31,7 @@ export function useBoard() {
       const b = await actions.getOrCreateBoard();
       setBoard(b);
 
-      const [cols, cats, crds, eps, trans, snaps, filters, lbls, clbls, tmpls, rels] = await Promise.all([
+      const [cols, cats, crds, eps, trans, snaps, filters, lbls, clbls, tmpls, rels, flags] = await Promise.all([
         actions.getColumns(b.id),
         actions.getCategories(b.id),
         actions.getCards(b.id),
@@ -42,6 +43,7 @@ export function useBoard() {
         actions.getCardLabels(b.id),
         actions.getCardTemplates(b.id),
         actions.getCardRelationships(b.id),
+        actions.getCardFlags(b.id),
       ]);
 
       setColumns(cols);
@@ -55,6 +57,7 @@ export function useBoard() {
       setCardLabels(clbls);
       setCardTemplates(tmpls);
       setCardRelationships(rels);
+      setCardFlags(flags);
 
       // Capture today's snapshot (upsert — idempotent)
       actions.captureCfdSnapshot(b.id).catch(() => {});
@@ -309,6 +312,20 @@ export function useBoard() {
     setSavedFilters(prev => prev.filter(f => f.id !== id));
   }, []);
 
+  // ─── Card Flag actions ───────────────────────────────────
+
+  const addFlag = useCallback(async (cardId: string, label: string, color: string) => {
+    if (!board) return;
+    const flag = await actions.addCardFlag(cardId, board.id, label, color);
+    setCardFlags(prev => (prev.some(f => f.id === flag.id) ? prev : [...prev, flag]));
+    return flag;
+  }, [board]);
+
+  const removeFlag = useCallback(async (id: string) => {
+    await actions.removeCardFlag(id);
+    setCardFlags(prev => prev.filter(f => f.id !== id));
+  }, []);
+
   // ─── Subtask actions ─────────────────────────────────────
 
   const loadSubtasks = useCallback(async (cardId: string) => {
@@ -355,7 +372,7 @@ export function useBoard() {
   }, []);
 
   return {
-    board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, loading, error,
+    board, columns, categories, cards, epics, subtasks, transitions, cfdSnapshots, savedFilters, labels, cardLabels, cardTemplates, cardRelationships, cardFlags, loading, error,
     addCard, editCard, removeCard, moveCardToColumn, archiveCard, unarchiveCard, archiveEpicCards, archiveDoneCards,
     addEpic, editEpic, removeEpic,
     addColumn, editColumn, removeColumn, reorderColumns,
@@ -364,6 +381,7 @@ export function useBoard() {
     addLabel, editLabel, removeLabel, toggleCardLabel,
     addCardTemplate, removeCardTemplate,
     addCardRelationship, removeCardRelationship,
+    addFlag, removeFlag,
     addSavedFilter, removeSavedFilter,
     refresh: loadBoard,
     // Internal setters for realtime updates (not part of public API)
@@ -373,5 +391,6 @@ export function useBoard() {
     __setEpics: setEpics,
     __setSubtasks: setSubtasks,
     __setTransitions: setTransitions,
+    __setCardFlags: setCardFlags,
   };
 }

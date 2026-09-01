@@ -151,6 +151,15 @@ export interface CardRelationship {
   created_at: string;
 }
 
+export interface CardFlag {
+  id: string;
+  board_id: string;
+  card_id: string;
+  label: string;
+  color: string;
+  created_at: string;
+}
+
 export interface CardAttachment {
   id: string;
   card_id: string;

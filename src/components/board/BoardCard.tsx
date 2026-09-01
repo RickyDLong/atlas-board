@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Card, Category, Label } from '@/types/database';
+import type { Card, Category, Label, CardFlag } from '@/types/database';
 
 interface BoardCardProps {
   card: Card;
@@ -9,6 +9,8 @@ interface BoardCardProps {
   priority?: { id: string; label: string; color: string };
   subtaskProgress?: { done: number; total: number } | null;
   cardLabels?: Label[];
+  flags?: CardFlag[];
+  relationshipCount?: number;
   isDoneColumn?: boolean;
   showShields?: boolean;
   isBlocked?: boolean;
@@ -60,8 +62,9 @@ export function getDueDateBadge(card: Card, isDoneColumn: boolean): { color: str
   };
 }
 
-export function BoardCard({ card, category, priority, subtaskProgress = null, cardLabels = [], isDoneColumn = false, showShields = true, isBlocked = false, onClick, onMenu }: BoardCardProps) {
+export function BoardCard({ card, category, priority, subtaskProgress = null, cardLabels = [], flags = [], relationshipCount = 0, isDoneColumn = false, showShields = true, isBlocked = false, onClick, onMenu }: BoardCardProps) {
   const [dragging, setDragging] = useState(false);
+  const isFlagged = flags.length > 0;
 
   const handleDragStart = (e: React.DragEvent) => {
     setDragging(true);
@@ -74,7 +77,7 @@ export function BoardCard({ card, category, priority, subtaskProgress = null, ca
 
   return (
     <div
-      className={`bg-[#12121a] border border-[#1e1e2e] rounded-lg p-3 mb-1.5 cursor-grab relative transition-all hover:border-[#2a2a3a] hover:bg-[#1a1a26] ${dragging ? 'opacity-50 rotate-1' : ''}`}
+      className={`border rounded-lg p-3 mb-1.5 cursor-grab relative transition-all ${isFlagged ? 'bg-[#1c180e] border-[#fbbf2455] border-l-2 border-l-[#fbbf24] hover:bg-[#221d12]' : 'bg-[#12121a] border-[#1e1e2e] hover:border-[#2a2a3a] hover:bg-[#1a1a26]'} ${dragging ? 'opacity-50 rotate-1' : ''}`}
       draggable
       onDragStart={handleDragStart}
       onDragEnd={() => setDragging(false)}
@@ -113,6 +116,16 @@ export function BoardCard({ card, category, priority, subtaskProgress = null, ca
 
       <div className="flex items-start justify-between gap-x-2 gap-y-1">
         <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
+          {flags.map(f => (
+            <span
+              key={f.id}
+              className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+              style={{ background: f.color + '22', color: f.color, border: `1px solid ${f.color}44` }}
+              title={`Flagged: ${f.label}`}
+            >
+              🚩 {f.label}
+            </span>
+          ))}
           {category && (
             <span
               className="text-[10px] font-medium px-1.5 py-0.5 rounded uppercase tracking-wide"
@@ -168,6 +181,16 @@ export function BoardCard({ card, category, priority, subtaskProgress = null, ca
 
         {/* Right-side indicators — kept together and never pushed to a new line */}
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* Linked-issue indicator */}
+          {relationshipCount > 0 && (
+            <span
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+              style={{ color: '#8888a0', background: '#1a1a26' }}
+              title={`${relationshipCount} linked card${relationshipCount === 1 ? '' : 's'}`}
+            >
+              🔗 {relationshipCount}
+            </span>
+          )}
           {/* Blocked indicator */}
           {isBlocked && (
             <span
